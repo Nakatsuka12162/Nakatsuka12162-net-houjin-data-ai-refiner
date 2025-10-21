@@ -12,8 +12,5 @@ RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-# Create startup script
-RUN echo '#!/bin/bash\npython manage.py migrate\npython manage.py runserver 0.0.0.0:8000' > /app/start.sh
-RUN chmod +x /app/start.sh
-
-CMD ["/app/start.sh"]
+# Use shell form to run multiple commands
+CMD python manage.py migrate && python manage.py runserver 0.0.0.0:8000

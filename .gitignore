@@ -1,2 +1,26 @@
+# Environment
 .env
 .venv
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Django
+staticfiles/
+media/
+db.sqlite3
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
