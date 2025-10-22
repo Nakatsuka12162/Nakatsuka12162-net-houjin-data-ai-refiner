@@ -6,7 +6,7 @@ on:
 
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/company-research
-  AWS_REGION: us-east-1
+  AWS_REGION: ap-northeast-1
 
 jobs:
   build-and-deploy:
