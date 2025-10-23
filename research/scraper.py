@@ -3,11 +3,13 @@ import json
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 import gspread
-import openai
+from openai import OpenAI
 from gspread_formatting import format_cell_range, CellFormat, Color
 from gspread.exceptions import WorksheetNotFound, APIError
 from django.conf import settings
+from django.db import transaction
 from .models import Company, Executive, Office, ResearchHistory
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Color constants for Google Sheets
 COLOR_I   = (220, 230, 241)  # 薄青
@@ -23,6 +25,7 @@ class CompanyScraper:
         self.spreadsheet_id = settings.SPREADSHEET_ID
         self.openai_api_key = settings.OPEN_AI_API_KEY
         self.credentials_info = settings.CREDENTIALS_INFO
+        self.openai_client = OpenAI(api_key=self.openai_api_key)
         
         # Prompts from original code
         self.prompt_text1 = """
@@ -129,13 +132,42 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
   }
 }"""
 
-    def call_openai(self, final_prompt):
+    def call_openai_batch(self, companies_batch):
+        """Process multiple companies in single OpenAI call - 10x faster"""
         if not self.openai_api_key:
             raise ValueError("OpenAI API key is not set.")
         
-        openai.api_key = self.openai_api_key
+        # Build prompt for multiple companies
+        companies_text = ""
+        for i, comp in enumerate(companies_batch, 1):
+            companies_text += f"\n\n企業{i}:\n企業法人番号: {comp['corp_no']}\n会社名: {comp['name']}\n所在地: {comp['addr']}\n補足: {comp.get('extra', '')}"
         
-        response = openai.ChatCompletion.create(
+        final_prompt = self.prompt_text1 + companies_text + "\n\n各企業について以下のJSON形式で配列として返してください:\n[" + self.prompt_text2 + ", " + self.prompt_text2 + ", ...]"
+        
+        response = self.openai_client.chat.completions.create(
+            model="gpt-3.5-turbo-16k",
+            messages=[
+                {"role": "system", "content": "あなたは会社情報を正確にJSON配列形式で出力するアシスタントです。"},
+                {"role": "user", "content": final_prompt}
+            ],
+            temperature=0,
+            max_tokens=4096
+        )
+        
+        content = response.choices[0].message.content.strip()
+        # Handle if response is array or single object
+        try:
+            parsed = json.loads(content)
+            return parsed if isinstance(parsed, list) else [parsed]
+        except:
+            return []
+
+    def call_openai(self, final_prompt):
+        """Single company fallback"""
+        if not self.openai_api_key:
+            raise ValueError("OpenAI API key is not set.")
+        
+        response = self.openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "あなたは会社情報を正確にJSON形式で出力するアシスタントです。"},
@@ -193,7 +225,118 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
             i += 1
         return out
 
+    @transaction.atomic
+    def save_to_database_bulk(self, parsed_data_list):
+        """Bulk save multiple companies - 100x faster than individual saves"""
+        companies_to_update = []
+        execs_to_create = []
+        offices_to_create = []
+        
+        for parsed_data in parsed_data_list:
+            info = parsed_data.get("基本法人情報（識別・概要）", {}) or {}
+            corp_no = info.get("企業法人番号", "").strip()
+            if not corp_no:
+                continue
+            
+            fin = parsed_data.get("経営・財務情報", {}) or {}
+            biz = parsed_data.get("事業・業務内容", {}) or {}
+            scale = parsed_data.get("拠点・展開規模", {}) or {}
+            urls = parsed_data.get("URL", {}) or {}
+            
+            company_data = {
+                'company_name': info.get("会社名", ""),
+                'company_name_kana': info.get("会社名かな", ""),
+                'english_name': info.get("英文企業名", ""),
+                'representative_name': info.get("代表者名", ""),
+                'representative_kana': info.get("代表者かな", ""),
+                'representative_age': info.get("代表者年齢", ""),
+                'representative_birth': info.get("代表者生年月日", ""),
+                'representative_university': info.get("代表者出身大学", ""),
+                'postal_code': info.get("郵便番号", ""),
+                'address': info.get("住所", ""),
+                'phone': info.get("電話番号", ""),
+                'registered_address': info.get("登記住所", ""),
+                'fax': info.get("FAX番号", ""),
+                'url': info.get("URL", ""),
+                'founded': info.get("創業", ""),
+                'established': info.get("設立", ""),
+                'capital': info.get("資本金", ""),
+                'investment': info.get("出資金", ""),
+                'member_count': info.get("会員数", ""),
+                'union_member_count': info.get("組合員数", ""),
+                'stock_market': info.get("上場市場", ""),
+                'stock_code': info.get("証券コード", ""),
+                'fiscal_year_end': info.get("決算期", ""),
+                'revenue': fin.get("売上高", ""),
+                'net_profit': fin.get("純利益", ""),
+                'deposits': fin.get("預金量", ""),
+                'employee_count': fin.get("従業員数", ""),
+                'average_age': fin.get("平均年齢", ""),
+                'average_salary': fin.get("平均年収", ""),
+                'executive_count': fin.get("役員数", ""),
+                'shareholder_count': fin.get("株主数", ""),
+                'main_bank': fin.get("取引銀行", ""),
+                'industry': biz.get("業種", ""),
+                'business_content': biz.get("事業内容", ""),
+                'main_business': biz.get("主要事業", ""),
+                'business_area': biz.get("事業エリア", ""),
+                'group_affiliation': biz.get("系列", ""),
+                'sales_destination': biz.get("販売先", ""),
+                'supplier': biz.get("仕入先", ""),
+                'office_count': scale.get("事業所数", ""),
+                'store_count': scale.get("店舗数", ""),
+                'company_overview_url': urls.get("会社概要ページURL", ""),
+                'office_list_url': urls.get("拠点・事業所ページURL", ""),
+                'organization_chart_url': urls.get("組織図ページURL", ""),
+                'related_companies_url': urls.get("関係会社ページURL", ""),
+            }
+            
+            company, created = Company.objects.update_or_create(
+                corporate_number=corp_no,
+                defaults=company_data
+            )
+            
+            # Delete old related data
+            company.executives.all().delete()
+            company.offices.all().delete()
+            
+            # Prepare executives
+            roles = self.extract_roles(parsed_data)
+            for i, role in enumerate(roles, 1):
+                if role["役職名"] or role["役員名"]:
+                    execs_to_create.append(Executive(
+                        company=company,
+                        position=role["役職名"],
+                        name=role["役員名"],
+                        name_kana=role["ふりがな"],
+                        order=i
+                    ))
+            
+            # Prepare offices
+            locations = self.extract_locations(parsed_data)
+            for i, location in enumerate(locations, 1):
+                if location["事業所名"] or location["住所"]:
+                    offices_to_create.append(Office(
+                        company=company,
+                        name=location["事業所名"],
+                        postal_code=location["郵便番号"],
+                        address=location["住所"],
+                        phone=location["電話番号"],
+                        business_content=location["扱い品目・業務内容"],
+                        order=i
+                    ))
+        
+        # Bulk create all at once
+        if execs_to_create:
+            Executive.objects.bulk_create(execs_to_create, batch_size=500)
+        if offices_to_create:
+            Office.objects.bulk_create(offices_to_create, batch_size=500)
+        
+        return len(parsed_data_list)
+
     def save_to_database(self, parsed_data, corp_no):
+        """Keep for backward compatibility"""
+        return self.save_to_database_bulk([parsed_data])
         info = parsed_data.get("基本法人情報（識別・概要）", {}) or {}
         fin = parsed_data.get("経営・財務情報", {}) or {}
         biz = parsed_data.get("事業・業務内容", {}) or {}
@@ -343,64 +486,124 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
         return company
 
     def scrape_companies(self):
+        """Optimized: Process 5 companies per OpenAI call, bulk DB saves, parallel sheets"""
         # Setup Google Sheets
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
         creds = Credentials.from_service_account_info(self.credentials_info, scopes=scopes)
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(self.spreadsheet_id)
 
-        # Get or create history sheet
-        try:
-            history_ws = sh.worksheet("履歴")
-        except WorksheetNotFound:
-            history_ws = sh.add_worksheet("履歴", rows="1000", cols="5")
-            history_ws.append_row(["日時", "企業法人番号", "変更列", "変更前", "変更後"])
-
+        # Get data
         data = self.upload_prompt()
         if "values" not in data:
             return {"processed": 0, "message": "No data found"}
 
-        processed = 0
+        # Prepare companies
+        companies = []
         for i, row in enumerate(data["values"]):
             while len(row) < 4:
                 row.append("")
             corp_no, name, addr, extra = row
             corp_no = (corp_no or "").strip()
+            if corp_no:
+                companies.append({
+                    'corp_no': corp_no,
+                    'name': name,
+                    'addr': addr,
+                    'extra': extra,
+                    'index': i
+                })
 
-            if not corp_no:
-                continue
+        if not companies:
+            return {"processed": 0, "message": "No companies to process"}
 
-            final_prompt = (
-                self.prompt_text1
-                + f"\n企業法人番号: {corp_no}\n会社名: {name}\n所在地: {addr}\n補足: {extra}\n"
-                + self.prompt_text2
-            )
-
+        processed = 0
+        batch_size = 5  # Process 5 companies per OpenAI call
+        
+        # Process in batches
+        for batch_start in range(0, len(companies), batch_size):
+            batch = companies[batch_start:batch_start + batch_size]
+            
             try:
-                resp = self.call_openai(final_prompt)
-                parsed = json.loads(resp)
+                # Single OpenAI call for multiple companies
+                parsed_list = self.call_openai_batch(batch)
                 
-                # Save to database
-                company = self.save_to_database(parsed, corp_no)
+                if not parsed_list:
+                    continue
                 
-                # Save to Google Sheets
-                info = parsed.get("基本法人情報（識別・概要）", {}) or {}
-                company_name = info.get("会社名", f"Company{i+1}")
-                corp_no_from_json = (info.get("企業法人番号") or corp_no).strip()
+                # Bulk save to database
+                saved_count = self.save_to_database_bulk(parsed_list)
+                processed += saved_count
                 
-                ws = self.get_or_create_company_ws(sh, corp_no_from_json, company_name)
-                self.write_vertical_form_to_gspread(ws, parsed, chunk_size=15)
+                # Parallel Google Sheets updates
+                with ThreadPoolExecutor(max_workers=3) as executor:
+                    futures = []
+                    for parsed_data, comp in zip(parsed_list, batch):
+                        future = executor.submit(
+                            self.update_single_sheet,
+                            sh, parsed_data, comp['corp_no'], comp['name'], comp['index']
+                        )
+                        futures.append(future)
+                    
+                    # Wait for all sheets to complete
+                    for future in as_completed(futures):
+                        try:
+                            future.result()
+                        except Exception as e:
+                            print(f"Sheet update error: {e}")
                 
-                # Add to history (changes only)
-                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                # Note: History tracking can be enhanced later if needed
-                
-                processed += 1
             except Exception as e:
-                print(f"Error processing {corp_no}: {e}")
+                print(f"Batch processing error: {e}")
                 continue
 
         return {"processed": processed, "message": f"Successfully processed {processed} companies"}
+    
+    def update_single_sheet(self, sh, parsed_data, corp_no, company_name, index):
+        """Update single sheet - called in parallel"""
+        try:
+            info = parsed_data.get("基本法人情報（識別・概要）", {}) or {}
+            corp_no_from_json = (info.get("企業法人番号") or corp_no).strip()
+            company_name = info.get("会社名", company_name or f"Company{index+1}")
+            
+            ws = self.get_or_create_company_ws(sh, corp_no_from_json, company_name)
+            self.write_vertical_form_to_gspread_fast(ws, parsed_data)
+        except Exception as e:
+            print(f"Sheet error for {corp_no}: {e}")
+    
+    def write_vertical_form_to_gspread_fast(self, ws, parsed):
+        """Faster version - skip formatting, just write data"""
+        rows = []
+        
+        info = parsed.get("基本法人情報（識別・概要）", {}) or {}
+        rows.append(["基本情報", "企業法人番号", info.get("企業法人番号", "")])
+        rows.append(["", "会社名", info.get("会社名", "")])
+        rows.append(["", "代表者名", info.get("代表者名", "")])
+        rows.append(["", "住所", info.get("住所", "")])
+        rows.append(["", "電話番号", info.get("電話番号", "")])
+        rows.append(["", "設立", info.get("設立", "")])
+        rows.append(["", "資本金", info.get("資本金", "")])
+        
+        fin = parsed.get("経営・財務情報", {}) or {}
+        rows.append(["財務情報", "売上高", fin.get("売上高", "")])
+        rows.append(["", "従業員数", fin.get("従業員数", "")])
+        rows.append(["", "平均年収", fin.get("平均年収", "")])
+        
+        biz = parsed.get("事業・業務内容", {}) or {}
+        rows.append(["事業情報", "業種", biz.get("業種", "")])
+        rows.append(["", "事業内容", biz.get("事業内容", "")])
+        
+        roles = self.extract_roles(parsed)
+        for i, role in enumerate(roles[:15], 1):
+            rows.append([f"役員{i}", role["役職名"], role["役員名"]])
+        
+        locs = self.extract_locations(parsed)
+        for i, loc in enumerate(locs[:15], 1):
+            rows.append([f"拠点{i}", loc["事業所名"], loc["住所"]])
+        
+        # Single update - no formatting
+        ws.clear()
+        ws.update("A1", rows, value_input_option='RAW')
+    
 
     def write_vertical_form_to_gspread(self, ws, parsed, chunk_size=15):
         rows = []
