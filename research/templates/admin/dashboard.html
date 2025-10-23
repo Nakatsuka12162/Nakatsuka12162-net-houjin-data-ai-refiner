@@ -1,0 +1,131 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-building"></i></div>
+        <div class="stat-number">{{ total_companies }}</div>
+        <div class="stat-label">Companies</div>
+    </div>
+    
+    <div class="stat-card green">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-number">{{ total_executives }}</div>
+        <div class="stat-label">Executives</div>
+    </div>
+    
+    <div class="stat-card orange">
+        <div class="stat-icon"><i class="fas fa-map-marker-alt"></i></div>
+        <div class="stat-number">{{ total_offices }}</div>
+        <div class="stat-label">Offices</div>
+    </div>
+    
+    <div class="stat-card blue">
+        <div class="stat-icon"><i class="fas fa-sync-alt"></i></div>
+        <div class="stat-number">{{ recent_changes|length }}</div>
+        <div class="stat-label">Recent Changes</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-chart-pie"></i> Industry Breakdown</h3>
+        </div>
+        <div class="card-body">
+            {% for item in industry_breakdown %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.625rem 0; border-bottom: 1px solid #e5e7eb;">
+                <span style="font-size: 0.875rem; color: #374151;">{{ item.industry|default:"未分類" }}</span>
+                <span class="badge badge-primary">{{ item.count }}</span>
+            </div>
+            {% empty %}
+            <p style="text-align: center; color: #6b7280; padding: 1rem; font-size: 0.875rem;">No data available</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-clock"></i> Recent Activity</h3>
+        </div>
+        <div class="card-body">
+            {% for change in recent_changes %}
+            <div style="padding: 0.625rem 0; border-bottom: 1px solid #e5e7eb;">
+                <div style="font-weight: 500; font-size: 0.875rem; color: #1c1e21;">{{ change.corporate_number }}</div>
+                <div style="font-size: 0.8125rem; color: #6b7280;">
+                    <span class="badge badge-primary" style="margin-right: 0.375rem;">{{ change.changed_field }}</span>
+                    {{ change.timestamp|date:"m/d H:i" }}
+                </div>
+            </div>
+            {% empty %}
+            <p style="text-align: center; color: #6b7280; padding: 1rem; font-size: 0.875rem;">No recent changes</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-rocket"></i> Quick Actions</h3>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button onclick="triggerScraping()" class="btn btn-primary" id="scrapingBtn">
+                <i class="fas fa-sync-alt"></i>
+                <span id="scrapingBtnText">Start Scraping</span>
+            </button>
+            <a href="{% url 'export_companies' %}" class="btn btn-success" download>
+                <i class="fas fa-download"></i> Export CSV
+            </a>
+            <a href="{% url 'company_list' %}" class="btn btn-primary">
+                <i class="fas fa-eye"></i> View All Companies
+            </a>
+        </div>
+        
+        <div id="scraping-status" style="margin-top: 1rem; display: none;"></div>
+    </div>
+</div>
+
+<script>
+function triggerScraping() {
+    const btn = document.getElementById('scrapingBtn');
+    const btnText = document.getElementById('scrapingBtnText');
+    const status = document.getElementById('scraping-status');
+    
+    btn.disabled = true;
+    btnText.innerHTML = 'Processing...';
+    btn.querySelector('i').className = 'fas fa-spinner fa-spin';
+    status.style.display = 'block';
+    status.innerHTML = '<div style="padding: 0.875rem; background: #dbeafe; border: 1px solid #93c5fd; border-radius: 6px; color: #075985; font-size: 0.875rem;"><i class="fas fa-spinner fa-spin"></i> Scraping in progress...</div>';
+    
+    fetch('{% url "trigger_scraping" %}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            status.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Scraping completed! Processed: ' + (data.result.processed || 'N/A') + '</div>';
+            btnText.innerHTML = 'Completed';
+            btn.querySelector('i').className = 'fas fa-check';
+            setTimeout(() => {
+                btnText.innerHTML = 'Start Scraping';
+                btn.querySelector('i').className = 'fas fa-sync-alt';
+                btn.disabled = false;
+            }, 3000);
+        } else {
+            status.innerHTML = '<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> Error: ' + data.message + '</div>';
+            btnText.innerHTML = 'Start Scraping';
+            btn.querySelector('i').className = 'fas fa-sync-alt';
+            btn.disabled = false;
+        }
+    })
+    .catch(err => {
+        status.innerHTML = '<div class="alert alert-error"><i class="fas fa-exclamation-triangle"></i> Network error occurred</div>';
+        btnText.innerHTML = 'Start Scraping';
+        btn.querySelector('i').className = 'fas fa-sync-alt';
+        btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}

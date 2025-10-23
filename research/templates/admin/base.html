@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Company Research System{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #f0f2f5; 
+            color: #1c1e21;
+            line-height: 1.5;
+        }
+        
+        .header { 
+            background: linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #22d3ee 100%); 
+            color: white; 
+            padding: 0.75rem 1.5rem; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { font-size: 1.25rem; margin-bottom: 0.5rem; font-weight: 600; }
+        .nav { 
+            display: flex; 
+            gap: 0.5rem; 
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .nav a { 
+            color: rgba(255,255,255,0.9); 
+            text-decoration: none; 
+            padding: 0.4rem 0.8rem; 
+            border-radius: 6px; 
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,0.2); color: white; }
+        
+        .container { max-width: 1280px; margin: 1.5rem auto; padding: 0 1rem; }
+        .card { 
+            background: white; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08); 
+            margin-bottom: 1.25rem;
+            overflow: hidden;
+        }
+        .card-header { 
+            padding: 1rem 1.25rem; 
+            border-bottom: 1px solid #e5e7eb; 
+            background: #fafbfc;
+        }
+        .card-header h2, .card-header h3 { 
+            font-size: 1rem; 
+            font-weight: 600; 
+            color: #1c1e21;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .card-body { padding: 1.25rem; }
+        
+        .btn { 
+            padding: 0.5rem 1rem; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            text-decoration: none; 
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-weight: 500; 
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        .btn-primary { background: #0891b2; color: white; }
+        .btn-primary:hover { background: #0e7490; transform: translateY(-1px); }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; transform: translateY(-1px); }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; transform: translateY(-1px); }
+        .btn-secondary { background: #6b7280; color: white; }
+        .btn-secondary:hover { background: #4b5563; transform: translateY(-1px); }
+        
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            gap: 1rem; 
+            margin-bottom: 1.5rem; 
+        }
+        .stat-card { 
+            background: white;
+            color: #1c1e21;
+            padding: 1rem; 
+            border-radius: 8px; 
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border-left: 4px solid #0891b2;
+        }
+        .stat-card.green { border-left-color: #10b981; }
+        .stat-card.orange { border-left-color: #f59e0b; }
+        .stat-card.blue { border-left-color: #3b82f6; }
+        .stat-icon { font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.8; color: #0891b2; }
+        .stat-card.green .stat-icon { color: #10b981; }
+        .stat-card.orange .stat-icon { color: #f59e0b; }
+        .stat-card.blue .stat-icon { color: #3b82f6; }
+        .stat-number { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .stat-label { opacity: 0.7; font-size: 0.875rem; }
+        
+        .search-bar { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+        .search-bar input, .search-bar select { 
+            flex: 1; 
+            min-width: 180px; 
+            padding: 0.625rem; 
+            border: 1px solid #d1d5db; 
+            border-radius: 8px; 
+            font-size: 0.875rem;
+        }
+        .search-bar input:focus, .search-bar select:focus { outline: none; border-color: #0891b2; }
+        
+        .table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        .table thead { background: #f9fafb; }
+        .table th { padding: 0.75rem; text-align: left; font-weight: 600; border-bottom: 2px solid #e5e7eb; white-space: nowrap; }
+        .table td { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+        .table tbody tr:hover { background: #f9fafb; }
+        
+        /* Mobile table improvements */
+        @media (max-width: 768px) {
+            .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .table { min-width: 600px; display: table; }
+            .table th, .table td { 
+                padding: 0.5rem; 
+                font-size: 0.8125rem;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+            .table th { font-size: 0.75rem; }
+            .table td code { font-size: 0.75rem; }
+            .table td strong { font-size: 0.8125rem; }
+            .table td small { font-size: 0.75rem; }
+        }
+        
+        .pagination { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
+        .pagination a, .pagination span { 
+            padding: 0.4rem 0.8rem; 
+            border: 1px solid #d1d5db; 
+            border-radius: 6px; 
+            text-decoration: none; 
+            font-size: 0.875rem;
+            color: #374151;
+        }
+        .pagination a:hover { background: #f3f4f6; }
+        .pagination .current { background: #0891b2; color: white; border-color: #0891b2; }
+        
+        .badge { 
+            padding: 0.25rem 0.625rem; 
+            border-radius: 12px; 
+            font-size: 0.75rem; 
+            font-weight: 500; 
+            display: inline-block;
+        }
+        .badge-primary { background: #dbeafe; color: #075985; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.375rem; font-weight: 500; font-size: 0.875rem; color: #374151; }
+        .form-group input, .form-group textarea, .form-group select, .form-control { 
+            width: 100%; 
+            padding: 0.5rem 0.75rem; 
+            border: 1px solid #d1d5db; 
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus, .form-control:focus {
+            outline: none;
+            border-color: #0891b2;
+            box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+        }
+        
+        .alert { padding: 0.875rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.875rem; }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        
+        .user-menu { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+        
+        .loading-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background: rgba(0,0,0,0.5); 
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 9999;
+        }
+        .loading-overlay.active { display: flex; }
+        .loading-spinner { 
+            width: 60px; 
+            height: 60px; 
+            border: 4px solid rgba(255,255,255,0.3); 
+            border-top-color: white; 
+            border-radius: 50%; 
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        @media (max-width: 768px) {
+            .header { padding: 0.75rem 1rem; }
+            .header h1 { font-size: 1.125rem; }
+            .nav { gap: 0.375rem; }
+            .nav a { padding: 0.375rem 0.625rem; font-size: 0.8125rem; }
+            .container { padding: 0 0.75rem; margin: 1rem auto; }
+            .card-body { padding: 1rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+            .stat-card { padding: 0.875rem; }
+            .stat-number { font-size: 1.5rem; }
+            .table { font-size: 0.8125rem; }
+            .table th, .table td { padding: 0.5rem; }
+            .search-bar { flex-direction: column; }
+            .search-bar input, .search-bar select { min-width: 100%; }
+        }
+
+        .logout-btn{
+            background-color: #ef4444;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="header">
+        <h1><i class="fas fa-building"></i> Company Research System</h1>
+        <div class="nav">
+            <a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}>
+                <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+            <a href="{% url 'company_list' %}" {% if 'company' in request.resolver_match.url_name %}class="active"{% endif %}>
+                <i class="fas fa-building"></i> Companies
+            </a>
+            <a href="{% url 'executive_list' %}" {% if 'executive' in request.resolver_match.url_name %}class="active"{% endif %}>
+                <i class="fas fa-users"></i> Executives
+            </a>
+            <a href="{% url 'office_list' %}" {% if 'office' in request.resolver_match.url_name %}class="active"{% endif %}>
+                <i class="fas fa-map-marker-alt"></i> Offices
+            </a>
+            <a href="{% url 'history_list' %}" {% if 'history' in request.resolver_match.url_name %}class="active"{% endif %}>
+                <i class="fas fa-history"></i> History
+            </a>
+            
+            <div class="user-menu">
+                <a href="{% url 'admin_logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        // Loading overlay helpers
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        // Auto-hide alerts after 5 seconds
+        document.querySelectorAll('.alert').forEach(alert => {
+            setTimeout(() => {
+                alert.style.transition = 'opacity 0.3s';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        });
+
+        // Auto-refresh stats every 30 seconds
+        setInterval(() => {
+            fetch('{% url "api_stats" %}')
+                .then(r => r.json())
+                .then(data => {
+                    document.querySelectorAll('.stat-number').forEach((el, i) => {
+                        const values = [data.companies, data.executives, data.offices, data.recent_changes];
+                        if (values[i] !== undefined) {
+                            el.style.transition = 'all 0.3s';
+                            el.style.transform = 'scale(1.1)';
+                            el.textContent = values[i];
+                            setTimeout(() => el.style.transform = 'scale(1)', 300);
+                        }
+                    });
+                })
+                .catch(err => console.error('Stats update failed:', err));
+        }, 30000);
+
+        // Show loading on form submissions
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!this.hasAttribute('data-no-loading')) {
+                    showLoading();
+                }
+            });
+        });
+
+        // Show loading on navigation (but not for downloads)
+        document.querySelectorAll('a[href]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                const isDownload = href && (href.includes('export') || href.includes('.csv') || this.hasAttribute('download'));
+                
+                if (!this.hasAttribute('target') && !this.hasAttribute('data-no-loading') && !isDownload) {
+                    if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                        showLoading();
+                    }
+                }
+            });
+        });
+
+        // Hide loading when page loads
+        window.addEventListener('load', hideLoading);
+    </script>
+</body>
+</html>

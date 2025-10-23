@@ -1,0 +1,91 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2><i class="fas fa-building"></i> Companies ({{ companies.paginator.count }})</h2>
+        <a href="{% url 'export_companies' %}" class="btn btn-success" style="font-size: 0.8125rem; padding: 0.4rem 0.8rem;" download>
+            <i class="fas fa-download"></i> Export
+        </a>
+    </div>
+    <div class="card-body">
+        <form method="get" class="search-bar" data-no-loading>
+            <input type="text" name="search" placeholder="Search companies..." value="{{ search }}">
+            <select name="industry">
+                <option value="">All Industries</option>
+                {% for ind in industries %}
+                    <option value="{{ ind }}" {% if ind == industry %}selected{% endif %}>{{ ind }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+        </form>
+        
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Corporate Number</th>
+                        <th>Representative</th>
+                        <th>Industry</th>
+                        <th>Employees</th>
+                        <th>Updated</th>
+                        <th style="text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for company in companies %}
+                    <tr>
+                        <td>
+                            <strong style="color: #1c1e21;">{{ company.company_name }}</strong>
+                            {% if company.company_name_kana %}
+                                <br><small style="color: #6b7280;">{{ company.company_name_kana }}</small>
+                            {% endif %}
+                        </td>
+                        <td><code style="background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 4px;">{{ company.corporate_number }}</code></td>
+                        <td>{{ company.representative_name|default:"-" }}</td>
+                        <td>
+                            {% if company.industry %}
+                                <span class="badge badge-primary">{{ company.industry }}</span>
+                            {% else %}
+                                <span style="color: #9ca3af;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ company.employee_count|default:"-" }}</td>
+                        <td style="font-size: 0.8125rem; color: #6b7280; white-space: nowrap;">{{ company.updated_at|date:"m/d H:i" }}</td>
+                        <td style="text-align: center;">
+                            <a href="{% url 'company_detail' company.pk %}" class="btn btn-primary" style="padding: 0.25rem 0.625rem; font-size: 0.8125rem; white-space: nowrap;">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem; color: #9ca3af;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-inbox"></i></div>
+                            <div>No companies found. Try adjusting your search criteria.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if companies.has_other_pages %}
+        <div class="pagination">
+            {% if companies.has_previous %}
+                <a href="?page=1{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>&laquo; First</a>
+                <a href="?page={{ companies.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>&lsaquo; Prev</a>
+            {% endif %}
+            
+            <span class="current">{{ companies.number }} / {{ companies.paginator.num_pages }}</span>
+            
+            {% if companies.has_next %}
+                <a href="?page={{ companies.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>Next &rsaquo;</a>
+                <a href="?page={{ companies.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>Last &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

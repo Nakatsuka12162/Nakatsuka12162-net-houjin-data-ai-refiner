@@ -1,0 +1,78 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-map-marker-alt"></i> Offices ({{ offices.paginator.count }})</h2>
+    </div>
+    <div class="card-body">
+        <form method="get" class="search-bar" data-no-loading>
+            <input type="text" name="search" placeholder="Search offices..." value="{{ search }}">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+        </form>
+        
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Office Name</th>
+                        <th>Company</th>
+                        <th>Address</th>
+                        <th>Phone</th>
+                        <th style="text-align: center;">Order</th>
+                        <th style="text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for office in offices %}
+                    <tr>
+                        <td><strong style="color: #1c1e21;">{{ office.name }}</strong></td>
+                        <td>
+                            <a href="{% url 'company_detail' office.company.pk %}" style="color: #0891b2; text-decoration: none; font-weight: 500;">
+                                {{ office.company.company_name }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if office.postal_code %}
+                                <div style="font-size: 0.8125rem; color: #6b7280; margin-bottom: 0.125rem;">{{ office.postal_code }}</div>
+                            {% endif %}
+                            <div>{{ office.address|truncatechars:60 }}</div>
+                        </td>
+                        <td>{{ office.phone|default:"-" }}</td>
+                        <td style="text-align: center; color: #6b7280;">{{ office.order }}</td>
+                        <td style="text-align: center;">
+                            <a href="{% url 'company_detail' office.company.pk %}" class="btn btn-primary" style="padding: 0.25rem 0.625rem; font-size: 0.8125rem; white-space: nowrap;">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: #9ca3af;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-map-marker-alt"></i></div>
+                            <div>No offices found.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if offices.has_other_pages %}
+        <div class="pagination">
+            {% if offices.has_previous %}
+                <a href="?page=1{% if search %}&search={{ search }}{% endif %}" data-no-loading>&laquo; First</a>
+                <a href="?page={{ offices.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" data-no-loading>&lsaquo; Prev</a>
+            {% endif %}
+            
+            <span class="current">{{ offices.number }} / {{ offices.paginator.num_pages }}</span>
+            
+            {% if offices.has_next %}
+                <a href="?page={{ offices.next_page_number }}{% if search %}&search={{ search }}{% endif %}" data-no-loading>Next &rsaquo;</a>
+                <a href="?page={{ offices.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}" data-no-loading>Last &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
