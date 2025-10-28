@@ -1,145 +1,532 @@
-{% extends 'admin/base.html' %}
-
-{% block content %}
+{% extends 'admin/base.html' %} {% load static %} {% block content %}
+<style>
+  .config-btn-cell {
+    white-space: nowrap;
+  }
+  
+  /* Ensure modal footer buttons are visible */
+  .modal-footer {
+    display: flex !important;
+    gap: 0.875rem !important;
+    justify-content: flex-end !important;
+    padding: 1.25rem 2rem !important;
+    border-top: 1px solid #e5e7eb !important;
+    background: #fafbfc !important;
+  }
+  
+  .modal-footer .btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.375rem !important;
+    padding: 0.625rem 1.25rem !important;
+    font-weight: 600 !important;
+    font-size: 0.9375rem !important;
+    border-radius: 8px !important;
+    transition: all 0.2s !important;
+  }
+  
+  @media (max-width: 768px) {
+    .card-header h2 {
+      font-size: 0.9rem;
+    }
+    .config-btn-cell .btn {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.4rem;
+    }
+    .modal-footer {
+      flex-direction: row !important;
+      gap: 0.5rem !important;
+    }
+    .modal-footer .btn {
+      flex: 1 !important;
+    }
+  }
+</style>
+{% csrf_token %}
 <div class="card">
-    <div class="card-header">
-        <h2><i class="fas fa-robot"></i> Scraping History ({{ executions.paginator.count }})</h2>
-        <button onclick="startScraping()" class="btn btn-success" style="float: right;">
-            <i class="fas fa-play"></i> Start New Scraping
-        </button>
+  <div
+    class="card-header"
+    style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    "
+  >
+    <h2 style="margin: 0">
+      <i class="fas fa-robot"></i> Scraping History ({{ executions.paginator.count }})
+    </h2>
+    <button onclick="showConfigModal()" class="btn btn-success">
+      <i class="fas fa-play"></i> Start New Scraping
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Started</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>Duration</th>
+            <th>Config</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for execution in executions %}
+          <tr>
+            <td>
+              <code
+                style="
+                  background: #f3f4f6;
+                  padding: 0.125rem 0.375rem;
+                  border-radius: 4px;
+                "
+              >
+                #{{ execution.id }}
+              </code>
+            </td>
+            <td style="white-space: nowrap">
+              <span style="color: #0891b2">
+                <i class="fas fa-clock"></i> {{ execution.started_at|date:"Y-m-d H:i:s" }}
+              </span>
+            </td>
+            <td>
+              {% if execution.status == 'running' %}
+              <span class="badge" style="background: #ffa500; color: white">
+                <i class="fas fa-spinner fa-spin"></i> 実行中
+              </span>
+              {% elif execution.status == 'completed' %}
+              <span class="badge" style="background: #28a745; color: white">
+                <i class="fas fa-check"></i> 完了
+              </span>
+              {% elif execution.status == 'failed' %}
+              <span class="badge" style="background: #dc3545; color: white">
+                <i class="fas fa-times"></i> 失敗
+              </span>
+              {% endif %}
+            </td>
+            <td>
+              {% if execution.total_companies > 0 %} {% widthratio
+              execution.processed_companies execution.total_companies 100 as
+              percentage %}
+              <div style="display: flex; align-items: center; gap: 0.5rem">
+                <div
+                  style="
+                    width: 100px;
+                    height: 8px;
+                    background: #e9ecef;
+                    border-radius: 4px;
+                    overflow: hidden;
+                  "
+                >
+                  <div
+                    style="width: {{ percentage }}%; height: 100%; background: #007cba;"
+                  ></div>
+                </div>
+                <span style="font-size: 0.875rem"
+                  >{{ execution.processed_companies }}/{{
+                  execution.total_companies }} ({{ percentage }}%)</span
+                >
+              </div>
+              {% else %}
+              <span style="color: #9ca3af"
+                >{{ execution.processed_companies }}/0</span
+              >
+              {% endif %}
+            </td>
+            <td>
+              {% if execution.completed_at %}
+                {% with duration=execution.completed_at|timeuntil:execution.started_at %}
+                  <span style="color: #059669">{{ duration }}</span>
+                {% endwith %}
+              {% else %}
+                <span style="color: #9ca3af">-</span>
+              {% endif %}
+            </td>
+            <td class="config-btn-cell">
+              <button
+                onclick="showConfigDetails({{ execution.id }}, '{{ execution.spreadsheet_range|escapejs }}', '{{ execution.description|escapejs }}', {{ execution.max_companies|default:'null' }}, {{ execution.update_google_sheets|lower }})"
+                class="btn btn-secondary"
+                style="font-size: 0.75rem; padding: 0.25rem 0.5rem"
+              >
+                <i class="fas fa-info-circle"></i> View Details
+              </button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td
+              colspan="6"
+              style="text-align: center; padding: 2rem; color: #9ca3af"
+            >
+              <div style="font-size: 2rem; margin-bottom: 0.5rem">
+                <i class="fas fa-robot"></i>
+              </div>
+              <div>No scraping history found.</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-    <div class="card-body">
-        <div class="table-wrapper">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Started</th>
-                        <th>Status</th>
-                        <th>Progress</th>
-                        <th>Duration</th>
-                        <th>Error</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for execution in executions %}
-                    <tr>
-                        <td>
-                            <code style="background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 4px;">
-                                #{{ execution.id }}
-                            </code>
-                        </td>
-                        <td style="white-space: nowrap;">
-                            <span style="color: #0891b2;">
-                                <i class="fas fa-clock"></i> {{ execution.started_at|date:"Y-m-d H:i:s" }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if execution.status == 'running' %}
-                                <span class="badge" style="background: #ffa500; color: white;">
-                                    <i class="fas fa-spinner fa-spin"></i> 実行中
-                                </span>
-                            {% elif execution.status == 'completed' %}
-                                <span class="badge" style="background: #28a745; color: white;">
-                                    <i class="fas fa-check"></i> 完了
-                                </span>
-                            {% elif execution.status == 'failed' %}
-                                <span class="badge" style="background: #dc3545; color: white;">
-                                    <i class="fas fa-times"></i> 失敗
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if execution.total_companies > 0 %}
-                                {% widthratio execution.processed_companies execution.total_companies 100 as percentage %}
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <div style="width: 100px; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden;">
-                                        <div style="width: {{ percentage }}%; height: 100%; background: #007cba;"></div>
-                                    </div>
-                                    <span style="font-size: 0.875rem;">{{ execution.processed_companies }}/{{ execution.total_companies }} ({{ percentage }}%)</span>
-                                </div>
-                            {% else %}
-                                <span style="color: #9ca3af;">{{ execution.processed_companies }}/0</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if execution.completed_at %}
-                                {% with duration=execution.completed_at|timeuntil:execution.started_at %}
-                                    <span style="color: #059669;">{{ duration }}</span>
-                                {% endwith %}
-                            {% else %}
-                                <span style="color: #9ca3af;">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if execution.error_message %}
-                                <span style="color: #dc2626; font-size: 0.875rem;" title="{{ execution.error_message }}">
-                                    {{ execution.error_message|truncatechars:50 }}
-                                </span>
-                            {% else %}
-                                <span style="color: #9ca3af;">-</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" style="text-align: center; padding: 2rem; color: #9ca3af;">
-                            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-robot"></i></div>
-                            <div>No scraping history found.</div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        {% if executions.has_other_pages %}
-        <div class="pagination">
-            {% if executions.has_previous %}
-                <a href="?page=1" data-no-loading>&laquo; First</a>
-                <a href="?page={{ executions.previous_page_number }}" data-no-loading>&lsaquo; Prev</a>
-            {% endif %}
-            
-            <span class="current">{{ executions.number }} / {{ executions.paginator.num_pages }}</span>
-            
-            {% if executions.has_next %}
-                <a href="?page={{ executions.next_page_number }}" data-no-loading>Next &rsaquo;</a>
-                <a href="?page={{ executions.paginator.num_pages }}" data-no-loading>Last &raquo;</a>
-            {% endif %}
-        </div>
-        {% endif %}
+
+    {% if executions.has_other_pages %}
+    <div class="pagination">
+      {% if executions.has_previous %}
+      <a href="?page=1" data-no-loading>&laquo; First</a>
+      <a href="?page={{ executions.previous_page_number }}" data-no-loading
+        >&lsaquo; Prev</a
+      >
+      {% endif %}
+
+      <span class="current"
+        >{{ executions.number }} / {{ executions.paginator.num_pages }}</span
+      >
+
+      {% if executions.has_next %}
+      <a href="?page={{ executions.next_page_number }}" data-no-loading
+        >Next &rsaquo;</a
+      >
+      <a href="?page={{ executions.paginator.num_pages }}" data-no-loading
+        >Last &raquo;</a
+      >
+      {% endif %}
     </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Configuration Modal -->
+<div class="modal-overlay" id="configModal" onclick="if(event.target === this) hideConfigModal();">
+  <div class="modal-content" style="max-width: 550px; display: flex; flex-direction: column; max-height: 90vh;">
+    <div class="modal-header" style="flex-shrink: 0;">
+      <h3><i class="fas fa-cog"></i> Configure Scraping</h3>
+      <button type="button" class="modal-close" onclick="hideConfigModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body" style="flex: 1; overflow-y: auto; max-height: none;">
+      <form id="configForm">
+        <div class="form-group">
+          <label
+            style="display: block; margin-bottom: 0.5rem; font-weight: bold"
+            >Spreadsheet Range:</label
+          >
+          <input
+            type="text"
+            id="spreadsheetRange"
+            value="会社リスト!A3:D"
+            placeholder="e.g., 会社リスト!A3:D50"
+            class="form-control"
+          />
+          <small style="color: #666; display: block; margin-top: 0.25rem"
+            >Specify which cells to process (e.g., A3:D50 for first 50
+            companies)</small
+          >
+        </div>
+
+        <div class="form-group">
+          <label
+            style="display: block; margin-bottom: 0.5rem; font-weight: bold"
+            >Max Companies (Optional):</label
+          >
+          <input
+            type="number"
+            id="maxCompanies"
+            placeholder="e.g., 25"
+            min="1"
+            max="1000"
+            class="form-control"
+          />
+          <small style="color: #666; display: block; margin-top: 0.25rem"
+            >Limit processing to X companies (leave empty for no limit)</small
+          >
+        </div>
+
+        <div class="form-group">
+          <label style="display: block; margin-bottom: 0.5rem">
+            <input
+              type="checkbox"
+              id="updateSheets"
+              checked
+              style="margin-right: 0.5rem"
+            />
+            <strong>Update Google Sheets</strong>
+          </label>
+          <small style="color: #666; display: block; margin-left: 1.5rem"
+            >Create individual company sheets (uncheck for database-only)</small
+          >
+        </div>
+
+        <div class="form-group">
+          <label
+            style="display: block; margin-bottom: 0.5rem; font-weight: bold"
+            >Description (Optional):</label
+          >
+          <input
+            type="text"
+            id="description"
+            placeholder="e.g., Q4 2024 company update"
+            class="form-control"
+          />
+          <small style="color: #666; display: block; margin-top: 0.25rem"
+            >Label this scraping run for tracking</small
+          >
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer" style="flex-shrink: 0;">
+      <button
+        type="button"
+        onclick="hideConfigModal()"
+        class="btn btn-secondary"
+      >
+        <i class="fas fa-times"></i> Cancel
+      </button>
+      <button
+        type="button"
+        onclick="startConfiguredScraping()"
+        class="btn btn-success"
+      >
+        <i class="fas fa-play"></i> Start Scraping
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Config Details Modal -->
+<div class="modal-overlay" id="configDetailsModal" onclick="if(event.target === this) hideConfigDetailsModal();">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3><i class="fas fa-info-circle"></i> Configuration Details</h3>
+      <button
+        type="button"
+        class="modal-close"
+        onclick="hideConfigDetailsModal()"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body" style="padding-bottom: 2rem;">
+      <div
+        style="
+          background: #f9fafb;
+          padding: 1rem;
+          border-radius: 6px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+          "
+        >
+          <i class="fas fa-hashtag" style="color: #0891b2"></i>
+          <strong>Execution ID:</strong>
+          <code
+            id="detailsId"
+            style="
+              background: #e5e7eb;
+              padding: 0.125rem 0.5rem;
+              border-radius: 4px;
+            "
+          ></code>
+        </div>
+        <div
+          style="
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+          "
+        >
+          <i
+            class="fas fa-table"
+            style="color: #10b981; margin-top: 0.25rem"
+          ></i>
+          <div>
+            <strong>Spreadsheet Range:</strong>
+            <div
+              id="detailsRange"
+              style="
+                color: #374151;
+                margin-top: 0.25rem;
+                font-family: monospace;
+              "
+            ></div>
+          </div>
+        </div>
+        <div
+          style="
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+          "
+        >
+          <i
+            class="fas fa-comment-alt"
+            style="color: #f59e0b; margin-top: 0.25rem"
+          ></i>
+          <div style="flex: 1">
+            <strong>Description:</strong>
+            <div
+              id="detailsDescription"
+              style="color: #374151; margin-top: 0.25rem"
+            ></div>
+          </div>
+        </div>
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+          "
+        >
+          <i class="fas fa-building" style="color: #3b82f6"></i>
+          <strong>Max Companies:</strong>
+          <span id="detailsMaxCompanies"></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem">
+          <i class="fas fa-file-spreadsheet" style="color: #8b5cf6"></i>
+          <strong>Update Google Sheets:</strong>
+          <span id="detailsUpdateSheets"></span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-function startScraping() {
-    if (confirm('Start new scraping process?')) {
+  function showConfigModal() {
+      document.getElementById('configModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+  }
+
+  function hideConfigModal() {
+      document.getElementById('configModal').classList.remove('active');
+      document.body.style.overflow = '';
+  }
+
+  function showConfigDetails(id, range, description, maxCompanies, updateSheets) {
+      document.getElementById('detailsId').textContent = '#' + id;
+      document.getElementById('detailsRange').textContent = range || 'Not specified';
+      document.getElementById('detailsDescription').textContent = description || 'No description provided';
+      document.getElementById('detailsMaxCompanies').textContent = maxCompanies ? maxCompanies + ' companies' : 'No limit';
+
+      const updateSheetsEl = document.getElementById('detailsUpdateSheets');
+      if (updateSheets) {
+          updateSheetsEl.innerHTML = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Enabled</span>';
+      } else {
+          updateSheetsEl.innerHTML = '<span style="color: #6b7280;"><i class="fas fa-times-circle"></i> Disabled</span>';
+      }
+
+      document.getElementById('configDetailsModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+  }
+
+  function hideConfigDetailsModal() {
+      document.getElementById('configDetailsModal').classList.remove('active');
+      document.body.style.overflow = '';
+  }
+
+  // Close modals when clicking outside
+  document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('modal-overlay')) {
+          if (e.target.id === 'configModal') {
+              hideConfigModal();
+          } else if (e.target.id === 'configDetailsModal') {
+              hideConfigDetailsModal();
+          }
+      }
+  });
+
+  // Close modals with Escape key
+  document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+          hideConfigModal();
+          hideConfigDetailsModal();
+      }
+  });
+
+  function startConfiguredScraping() {
+        const config = {
+            spreadsheet_range: document.getElementById('spreadsheetRange').value,
+            max_companies: document.getElementById('maxCompanies').value ? parseInt(document.getElementById('maxCompanies').value) : null,
+            update_google_sheets: document.getElementById('updateSheets').checked,
+            description: document.getElementById('description').value
+        };
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                         document.querySelector('input[name="csrfmiddlewaretoken"]')?.value ||
+                         document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        if (!csrfToken) {
+            showAlert('CSRF token not found. Please refresh the page.', 'error');
+            return;
+        }
+
+        console.log('Starting scraping with config:', config);
+        hideConfigModal();
+        showLoading('Starting scraping process');
+
         fetch('/admin/api/scrape/', {
             method: 'POST',
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(config)
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
+            hideLoading();
             if (data.status === 'started') {
-                alert('Scraping started! Execution ID: ' + data.execution_id);
-                location.reload();
+                const configDetails = `Execution ID: #${data.execution_id}
+  Range: ${data.config.range}
+  Update Sheets: ${data.config.update_sheets ? 'Yes' : 'No'}
+  ${data.config.description ? 'Description: ' + data.config.description : ''}
+  ${data.config.max_companies ? 'Max Companies: ' + data.config.max_companies : ''}`;
+
+                showAlert(configDetails, 'success', 'Scraping Started!');
+                setTimeout(() => {
+                    hideAlert();
+                    showLoading('Refreshing page');
+                    location.reload();
+                }, 2500);
             } else {
-                alert('Error: ' + data.message);
+                showAlert('Error: ' + data.message, 'error');
             }
         })
         .catch(error => {
-            alert('Error starting scraping: ' + error.message);
+            console.error('Fetch error:', error);
+            hideLoading();
+            showAlert('Error starting scraping: ' + error.message, 'error');
         });
     }
-}
 
-// Auto-refresh every 10 seconds if there are running executions
-{% for execution in executions %}
-    {% if execution.status == 'running' %}
-        <script>setTimeout(() => location.reload(), 10000);</script>
-    {% endif %}
-{% endfor %}
+    function startScraping() {
+        showConfigModal();
+    }
+
+  // Auto-refresh every 10 seconds if there are running executions (silent refresh)
+  {% for execution in executions %}
+      {% if execution.status == 'running' %}
+          setTimeout(() => {
+              location.reload();
+          }, 10000);
+      {% endif %}
+  {% endfor %}
 </script>
 {% endblock %}

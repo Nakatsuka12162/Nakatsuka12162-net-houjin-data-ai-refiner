@@ -197,22 +197,278 @@
             left: 0; 
             right: 0; 
             bottom: 0; 
-            background: rgba(0,0,0,0.5); 
+            background: rgba(0, 0, 0, 0.7); 
             display: none; 
             align-items: center; 
             justify-content: center; 
             z-index: 9999;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
-        .loading-overlay.active { display: flex; }
+        .loading-overlay.active { 
+            display: flex; 
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .loading-content {
+            text-align: center;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
         .loading-spinner { 
-            width: 60px; 
-            height: 60px; 
-            border: 4px solid rgba(255,255,255,0.3); 
-            border-top-color: white; 
-            border-radius: 50%; 
+            width: 80px; 
+            height: 80px; 
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .loading-spinner::before,
+        .loading-spinner::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 50%;
+        }
+        
+        .loading-spinner::before {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(8, 145, 178, 0.2);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .loading-spinner::after {
+            width: 80px;
+            height: 80px;
+            border: 4px solid transparent;
+            border-top-color: #0891b2;
+            border-right-color: #06b6d4;
+            border-bottom-color: #22d3ee;
             animation: spin 0.8s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
+        
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: scale(1.1);
+                opacity: 0.5;
+            }
+        }
+        
+        .loading-message {
+            color: white;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            font-size: 1.125rem;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            animation: fadeInUp 0.5s ease-out 0.2s both;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+            margin-left: 4px;
+        }
+        
+        .loading-dots span {
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            display: inline-block;
+            animation: loadingDots 1.4s infinite ease-in-out both;
+        }
+        
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes loadingDots {
+            0%, 80%, 100% { 
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+            40% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 0;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-30px) scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        .modal-header {
+            padding: 1.75rem 2rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(to bottom, #fafbfc, white);
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.375rem;
+            color: #0891b2;
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            font-weight: 700;
+        }
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-close:hover {
+            background: #fee2e2;
+            color: #dc2626;
+            transform: rotate(90deg);
+        }
+        .modal-body {
+            padding: 2rem;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-body::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .modal-footer {
+            padding: 1.25rem 2rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 0.875rem;
+            justify-content: flex-end;
+            background: #fafbfc;
+        }
+        
+        /* Alert Modal Styles */
+        .alert-modal-icon {
+            font-size: 4rem;
+            margin-bottom: 1.25rem;
+            animation: iconPop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes iconPop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .alert-modal-icon.success { color: #10b981; text-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+        .alert-modal-icon.error { color: #ef4444; text-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+        .alert-modal-icon.info { color: #0891b2; text-shadow: 0 0 20px rgba(8, 145, 178, 0.3); }
+        .alert-modal-icon.warning { color: #f59e0b; text-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+        .alert-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #1c1e21;
+            animation: fadeInUp 0.5s ease-out 0.1s both;
+        }
+        .alert-modal-message {
+            color: #6b7280;
+            line-height: 1.7;
+            font-size: 1rem;
+            animation: fadeInUp 0.5s ease-out 0.2s both;
+            white-space: pre-line;
+        }
         
         @media (max-width: 768px) {
             .header { padding: 0.75rem 1rem; }
@@ -239,8 +495,33 @@
     </style>
 </head>
 <body>
+    <!-- Loading Overlay with Enhanced Animation -->
     <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner"></div>
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-message" id="loadingMessage">
+                Loading<span class="loading-dots"><span></span><span></span><span></span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div class="modal-overlay" id="alertModal" onclick="if(event.target === this) hideAlert();">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header" style="border-bottom: none; padding: 1.5rem 2rem 0;">
+                <div style="flex: 1;"></div>
+                <button type="button" class="modal-close" onclick="hideAlert()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 1rem 2rem 3rem;">
+                <div class="alert-modal-icon" id="alertIcon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="alert-modal-title" id="alertTitle">Alert</div>
+                <div class="alert-modal-message" id="alertMessage"></div>
+            </div>
+        </div>
     </div>
 
     <div class="header">
@@ -258,7 +539,7 @@
             <a href="{% url 'office_list' %}" {% if 'office' in request.resolver_match.url_name %}class="active"{% endif %}>
                 <i class="fas fa-map-marker-alt"></i> Offices
             </a>
-            <a href="{% url 'history_list' %}" {% if 'history' in request.resolver_match.url_name %}class="active"{% endif %}>
+            <a href="{% url 'history_list' %}" {% if request.resolver_match.url_name == 'history_list' %}class="active"{% endif %}>
                 <i class="fas fa-history"></i> History
             </a>
             <a href="{% url 'scraping_history' %}" {% if request.resolver_match.url_name == 'scraping_history' %}class="active"{% endif %}>
@@ -281,14 +562,88 @@
     </div>
 
     <script>
-        // Loading overlay helpers
-        function showLoading() {
+        // Loading overlay helpers with animated dots
+        function showLoading(message = 'Loading') {
+            const messageEl = document.getElementById('loadingMessage');
+            messageEl.innerHTML = message + '<span class="loading-dots"><span></span><span></span><span></span></span>';
             document.getElementById('loadingOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
         }
         
         function hideLoading() {
             document.getElementById('loadingOverlay').classList.remove('active');
+            document.body.style.overflow = ''; // Restore scrolling
         }
+
+        // Custom Alert Modal with enhanced animations
+        function showAlert(message, type = 'info', title = null) {
+            const modal = document.getElementById('alertModal');
+            const icon = document.getElementById('alertIcon');
+            const titleEl = document.getElementById('alertTitle');
+            const messageEl = document.getElementById('alertMessage');
+            
+            // Set icon based on type
+            const icons = {
+                'success': 'fa-check-circle',
+                'error': 'fa-exclamation-circle',
+                'warning': 'fa-exclamation-triangle',
+                'info': 'fa-info-circle'
+            };
+            
+            const titles = {
+                'success': 'Success!',
+                'error': 'Error',
+                'warning': 'Warning',
+                'info': 'Information'
+            };
+            
+            // Reset animation
+            icon.style.animation = 'none';
+            setTimeout(() => {
+                icon.style.animation = '';
+            }, 10);
+            
+            icon.className = 'alert-modal-icon ' + type;
+            icon.innerHTML = '<i class="fas ' + icons[type] + '"></i>';
+            titleEl.textContent = title || titles[type];
+            messageEl.textContent = message;
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+        
+        function hideAlert() {
+            document.getElementById('alertModal').classList.remove('active');
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                if (e.target.id === 'alertModal') {
+                    hideAlert();
+                }
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideAlert();
+                const activeModals = document.querySelectorAll('.modal-overlay.active');
+                activeModals.forEach(modal => {
+                    if (modal.id !== 'loadingOverlay') {
+                        modal.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                });
+            }
+        });
+        
+        // Override default alert
+        window.alert = function(message) {
+            showAlert(message, 'info');
+        };
 
         // Auto-hide alerts after 5 seconds
         document.querySelectorAll('.alert').forEach(alert => {

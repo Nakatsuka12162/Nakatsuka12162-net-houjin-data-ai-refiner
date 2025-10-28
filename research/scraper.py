@@ -27,6 +27,11 @@ class CompanyScraper:
         self.credentials_info = settings.CREDENTIALS_INFO
         self.openai_client = OpenAI(api_key=self.openai_api_key)
         
+        # User configuration defaults
+        self.user_range = "会社リスト!A3:D"
+        self.user_update_sheets = True
+        self.user_max_companies = None
+        
         # Prompts from original code
         self.prompt_text1 = """
 各会社の調査においては、まず必ず提示された企業法人番号を利用してGoogleで検索してください。
@@ -557,6 +562,84 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
                 continue
 
         return {"processed": processed, "message": f"Successfully processed {processed} companies"}
+    
+    def scrape_companies_with_config(self):
+        """Scraping with user configuration"""
+        # Setup Google Sheets
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+        creds = Credentials.from_service_account_info(self.credentials_info, scopes=scopes)
+        gc = gspread.authorize(creds)
+        sh = gc.open_by_key(self.spreadsheet_id)
+
+        # Get data using user-specified range
+        url = f"https://sheets.googleapis.com/v4/spreadsheets/{self.spreadsheet_id}/values/{self.user_range}?key={self.api_key}"
+        data = requests.get(url).json()
+        
+        if "values" not in data:
+            return {"processed": 0, "total": 0, "message": "No data found"}
+
+        # Prepare companies
+        companies = []
+        for i, row in enumerate(data["values"]):
+            while len(row) < 4:
+                row.append("")
+            corp_no, name, addr, extra = row
+            corp_no = (corp_no or "").strip()
+            if corp_no:
+                companies.append({
+                    'corp_no': corp_no,
+                    'name': name,
+                    'addr': addr,
+                    'extra': extra,
+                    'index': i
+                })
+
+        if not companies:
+            return {"processed": 0, "total": 0, "message": "No companies to process"}
+
+        # Apply max_companies limit
+        if self.user_max_companies and self.user_max_companies > 0:
+            companies = companies[:self.user_max_companies]
+
+        processed = 0
+        batch_size = 3
+        
+        # Process in batches
+        for batch_start in range(0, len(companies), batch_size):
+            batch = companies[batch_start:batch_start + batch_size]
+            
+            try:
+                parsed_list = self.call_openai_batch(batch)
+                
+                if not parsed_list:
+                    continue
+                
+                # Bulk save to database
+                saved_count = self.save_to_database_bulk(parsed_list)
+                processed += saved_count
+                
+                # Update Google Sheets only if user enabled it
+                if self.user_update_sheets:
+                    with ThreadPoolExecutor(max_workers=3) as executor:
+                        futures = []
+                        for parsed_data, comp in zip(parsed_list, batch):
+                            future = executor.submit(
+                                self.update_single_sheet,
+                                sh, parsed_data, comp['corp_no'], comp['name'], comp['index']
+                            )
+                            futures.append(future)
+                        
+                        for future in as_completed(futures):
+                            try:
+                                future.result()
+                            except Exception as e:
+                                print(f"Sheet update error: {e}")
+                
+            except Exception as e:
+                print(f"Batch processing error: {e}")
+                continue
+
+        return {"processed": processed, "total": len(companies), "message": f"Successfully processed {processed}/{len(companies)} companies"}
     
     def update_single_sheet(self, sh, parsed_data, corp_no, company_name, index):
         """Update single sheet - called in parallel"""

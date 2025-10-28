@@ -129,6 +129,12 @@ class ExecutionHistory(models.Model):
     processed_companies = models.IntegerField(default=0, verbose_name="処理済み会社数")
     error_message = models.TextField(blank=True, verbose_name="エラーメッセージ")
     
+    # User configuration fields
+    spreadsheet_range = models.CharField(max_length=100, default="会社リスト!A3:D", verbose_name="スプレッドシート範囲")
+    update_google_sheets = models.BooleanField(default=True, verbose_name="Google Sheets更新")
+    description = models.CharField(max_length=200, blank=True, verbose_name="説明")
+    max_companies = models.IntegerField(null=True, blank=True, verbose_name="最大処理数")
+    
     class Meta:
         verbose_name = "実行履歴"
         verbose_name_plural = "実行履歴一覧"

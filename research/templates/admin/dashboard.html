@@ -1,6 +1,7 @@
 {% extends 'admin/base.html' %}
 
 {% block content %}
+{% csrf_token %}
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-icon"><i class="fas fa-building"></i></div>
@@ -104,9 +105,9 @@ function triggerScraping() {
     })
     .then(r => r.json())
     .then(data => {
-        if (data.status === 'success') {
-            status.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Scraping completed! Processed: ' + (data.result.processed || 'N/A') + '</div>';
-            btnText.innerHTML = 'Completed';
+        if (data.status === 'started') {
+            status.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Scraping started in background! Execution ID: ' + data.execution_id + '</div>';
+            btnText.innerHTML = 'Started';
             btn.querySelector('i').className = 'fas fa-check';
             setTimeout(() => {
                 btnText.innerHTML = 'Start Scraping';

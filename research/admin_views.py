@@ -185,18 +185,36 @@ def scraping_history(request):
 def trigger_scraping(request):
     if request.method == 'POST':
         try:
-            # Create execution record
-            execution = ExecutionHistory.objects.create()
+            import json
+            
+            # Parse configuration from request body
+            config = {}
+            if request.content_type == 'application/json' and request.body:
+                config = json.loads(request.body)
+            
+            # Create execution record with user configuration
+            execution = ExecutionHistory.objects.create(
+                spreadsheet_range=config.get('spreadsheet_range', '会社リスト!A3:D'),
+                update_google_sheets=config.get('update_google_sheets', True),
+                description=config.get('description', ''),
+                max_companies=config.get('max_companies', None)
+            )
             
             # Start background scraping
             def background_scrape():
                 try:
                     from .scraper import CompanyScraper
                     scraper = CompanyScraper()
-                    result = scraper.scrape_companies()
+                    
+                    # Apply user configuration
+                    scraper.user_range = execution.spreadsheet_range
+                    scraper.user_update_sheets = execution.update_google_sheets
+                    scraper.user_max_companies = execution.max_companies
+                    
+                    result = scraper.scrape_companies_with_config()
                     execution.status = 'completed'
                     execution.processed_companies = result.get('processed', 0)
-                    execution.total_companies = result.get('processed', 0)
+                    execution.total_companies = result.get('total', 0)
                     execution.completed_at = timezone.now()
                     execution.save()
                 except Exception as e:
@@ -212,7 +230,13 @@ def trigger_scraping(request):
             return JsonResponse({
                 'status': 'started', 
                 'execution_id': execution.id,
-                'message': 'Scraping started in background'
+                'message': 'Scraping started with user configuration',
+                'config': {
+                    'range': execution.spreadsheet_range,
+                    'update_sheets': execution.update_google_sheets,
+                    'description': execution.description,
+                    'max_companies': execution.max_companies
+                }
             })
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
