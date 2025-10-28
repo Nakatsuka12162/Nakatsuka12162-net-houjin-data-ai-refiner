@@ -109,32 +109,16 @@
               {% endif %}
             </td>
             <td>
-              {% if execution.total_companies > 0 %} {% widthratio
-              execution.processed_companies execution.total_companies 100 as
-              percentage %}
-              <div style="display: flex; align-items: center; gap: 0.5rem">
-                <div
-                  style="
-                    width: 100px;
-                    height: 8px;
-                    background: #e9ecef;
-                    border-radius: 4px;
-                    overflow: hidden;
-                  "
-                >
-                  <div
-                    style="width: {{ percentage }}%; height: 100%; background: #007cba;"
-                  ></div>
+              {% if execution.total_companies > 0 %}
+                {% widthratio execution.processed_companies execution.total_companies 100 as percentage %}
+                <div style="display: flex; align-items: center; gap: 0.5rem">
+                  <div style="width: 100px; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden;">
+                    <div style="width: {{ percentage }}%; height: 100%; background: #007cba;"></div>
+                  </div>
+                  <span style="font-size: 0.875rem; white-space: nowrap;">{{ execution.processed_companies }}/{{ execution.total_companies }} ({{ percentage }}%)</span>
                 </div>
-                <span style="font-size: 0.875rem"
-                  >{{ execution.processed_companies }}/{{
-                  execution.total_companies }} ({{ percentage }}%)</span
-                >
-              </div>
               {% else %}
-              <span style="color: #9ca3af"
-                >{{ execution.processed_companies }}/0</span
-              >
+                <span style="color: #9ca3af">{{ execution.processed_companies }}/0</span>
               {% endif %}
             </td>
             <td>
