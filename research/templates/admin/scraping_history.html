@@ -132,7 +132,7 @@
             </td>
             <td class="config-btn-cell">
               <button
-                onclick="showConfigDetails({{ execution.id }}, '{{ execution.spreadsheet_range|escapejs }}', '{{ execution.description|escapejs }}', {{ execution.max_companies|default:'null' }}, {{ execution.update_google_sheets|lower }})"
+                onclick="showConfigDetails({{ execution.id }}, '{{ execution.spreadsheet_range|escapejs }}', '{{ execution.description|escapejs }}', {{ execution.max_companies|default:'null' }}, {{ execution.update_google_sheets|lower }}, '{{ execution.error_message|escapejs }}')"
                 class="btn btn-secondary"
                 style="font-size: 0.75rem; padding: 0.25rem 0.5rem"
               >
@@ -382,6 +382,11 @@
           <strong>Update Google Sheets:</strong>
           <span id="detailsUpdateSheets"></span>
         </div>
+        
+        <!-- Error/Details Section -->
+        <div id="detailsError" style="display: none; margin-top: 1rem; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px;">
+          <!-- Error content will be inserted here -->
+        </div>
       </div>
     </div>
   </div>
@@ -398,7 +403,7 @@
       document.body.style.overflow = '';
   }
 
-  function showConfigDetails(id, range, description, maxCompanies, updateSheets) {
+  function showConfigDetails(id, range, description, maxCompanies, updateSheets, errorMessage) {
       document.getElementById('detailsId').textContent = '#' + id;
       document.getElementById('detailsRange').textContent = range || 'Not specified';
       document.getElementById('detailsDescription').textContent = description || 'No description provided';
@@ -409,6 +414,15 @@
           updateSheetsEl.innerHTML = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Enabled</span>';
       } else {
           updateSheetsEl.innerHTML = '<span style="color: #6b7280;"><i class="fas fa-times-circle"></i> Disabled</span>';
+      }
+
+      // Show error message if available
+      const errorDiv = document.getElementById('detailsError');
+      if (errorMessage && errorMessage.trim()) {
+          errorDiv.style.display = 'block';
+          errorDiv.innerHTML = '<strong style="color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> Details/Error:</strong><br><pre style="white-space: pre-wrap; font-size: 0.8rem; background: #f5f5f5; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem; color: #374151;">' + errorMessage + '</pre>';
+      } else {
+          errorDiv.style.display = 'none';
       }
 
       document.getElementById('configDetailsModal').classList.add('active');

@@ -7,3 +7,4 @@ gspread
 openai
 gspread-formatting
 python-decouple
+openpyxl
