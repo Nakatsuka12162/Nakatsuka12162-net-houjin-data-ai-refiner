@@ -133,7 +133,7 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
 }"""
 
     def call_openai_batch(self, companies_batch):
-        """Process multiple companies in single OpenAI call - 10x faster"""
+        """Process multiple companies in single OpenAI call with GPT-4o-mini for speed"""
         if not self.openai_api_key:
             raise ValueError("OpenAI API key is not set.")
         
@@ -145,13 +145,13 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
         final_prompt = self.prompt_text1 + companies_text + "\n\n各企業について以下のJSON形式で配列として返してください:\n[" + self.prompt_text2 + ", " + self.prompt_text2 + ", ...]"
         
         response = self.openai_client.chat.completions.create(
-            model="gpt-3.5-turbo-16k",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "あなたは会社情報を正確にJSON配列形式で出力するアシスタントです。"},
                 {"role": "user", "content": final_prompt}
             ],
             temperature=0,
-            max_tokens=4096
+            max_tokens=16384
         )
         
         content = response.choices[0].message.content.strip()
@@ -518,7 +518,7 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
             return {"processed": 0, "message": "No companies to process"}
 
         processed = 0
-        batch_size = 5  # Process 5 companies per OpenAI call
+        batch_size = 3  # Process 3 companies per OpenAI call - balanced speed/reliability
         
         # Process in batches
         for batch_start in range(0, len(companies), batch_size):
