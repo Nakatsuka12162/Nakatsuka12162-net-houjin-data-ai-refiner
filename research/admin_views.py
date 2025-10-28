@@ -6,8 +6,10 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.views.decorators.csrf import csrf_exempt
-from .models import Company, Executive, Office, ResearchHistory
+from .models import Company, Executive, Office, ResearchHistory, ExecutionHistory
 import csv
+import threading
+from django.utils import timezone
 
 def admin_login(request):
     if request.method == 'POST':
@@ -167,14 +169,51 @@ def export_companies_csv(request):
     return response
 
 @login_required
+def scraping_history(request):
+    """View for scraping execution history"""
+    executions = ExecutionHistory.objects.all()
+    
+    paginator = Paginator(executions.order_by('-started_at'), 20)
+    page = paginator.get_page(request.GET.get('page'))
+    
+    return render(request, 'admin/scraping_history.html', {
+        'executions': page,
+    })
+
+@login_required
 @csrf_exempt
 def trigger_scraping(request):
     if request.method == 'POST':
-        from .scraper import CompanyScraper
         try:
-            scraper = CompanyScraper()
-            result = scraper.scrape_companies()
-            return JsonResponse({'status': 'success', 'result': result})
+            # Create execution record
+            execution = ExecutionHistory.objects.create()
+            
+            # Start background scraping
+            def background_scrape():
+                try:
+                    from .scraper import CompanyScraper
+                    scraper = CompanyScraper()
+                    result = scraper.scrape_companies()
+                    execution.status = 'completed'
+                    execution.processed_companies = result.get('processed', 0)
+                    execution.total_companies = result.get('processed', 0)
+                    execution.completed_at = timezone.now()
+                    execution.save()
+                except Exception as e:
+                    execution.status = 'failed'
+                    execution.error_message = str(e)
+                    execution.completed_at = timezone.now()
+                    execution.save()
+            
+            thread = threading.Thread(target=background_scrape)
+            thread.daemon = True
+            thread.start()
+            
+            return JsonResponse({
+                'status': 'started', 
+                'execution_id': execution.id,
+                'message': 'Scraping started in background'
+            })
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
     return JsonResponse({'status': 'error', 'message': 'POST required'})

@@ -1,0 +1,145 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-robot"></i> Scraping History ({{ executions.paginator.count }})</h2>
+        <button onclick="startScraping()" class="btn btn-success" style="float: right;">
+            <i class="fas fa-play"></i> Start New Scraping
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Started</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Duration</th>
+                        <th>Error</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for execution in executions %}
+                    <tr>
+                        <td>
+                            <code style="background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 4px;">
+                                #{{ execution.id }}
+                            </code>
+                        </td>
+                        <td style="white-space: nowrap;">
+                            <span style="color: #0891b2;">
+                                <i class="fas fa-clock"></i> {{ execution.started_at|date:"Y-m-d H:i:s" }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if execution.status == 'running' %}
+                                <span class="badge" style="background: #ffa500; color: white;">
+                                    <i class="fas fa-spinner fa-spin"></i> 実行中
+                                </span>
+                            {% elif execution.status == 'completed' %}
+                                <span class="badge" style="background: #28a745; color: white;">
+                                    <i class="fas fa-check"></i> 完了
+                                </span>
+                            {% elif execution.status == 'failed' %}
+                                <span class="badge" style="background: #dc3545; color: white;">
+                                    <i class="fas fa-times"></i> 失敗
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if execution.total_companies > 0 %}
+                                {% widthratio execution.processed_companies execution.total_companies 100 as percentage %}
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 100px; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden;">
+                                        <div style="width: {{ percentage }}%; height: 100%; background: #007cba;"></div>
+                                    </div>
+                                    <span style="font-size: 0.875rem;">{{ execution.processed_companies }}/{{ execution.total_companies }} ({{ percentage }}%)</span>
+                                </div>
+                            {% else %}
+                                <span style="color: #9ca3af;">{{ execution.processed_companies }}/0</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if execution.completed_at %}
+                                {% with duration=execution.completed_at|timeuntil:execution.started_at %}
+                                    <span style="color: #059669;">{{ duration }}</span>
+                                {% endwith %}
+                            {% else %}
+                                <span style="color: #9ca3af;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if execution.error_message %}
+                                <span style="color: #dc2626; font-size: 0.875rem;" title="{{ execution.error_message }}">
+                                    {{ execution.error_message|truncatechars:50 }}
+                                </span>
+                            {% else %}
+                                <span style="color: #9ca3af;">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: #9ca3af;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-robot"></i></div>
+                            <div>No scraping history found.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if executions.has_other_pages %}
+        <div class="pagination">
+            {% if executions.has_previous %}
+                <a href="?page=1" data-no-loading>&laquo; First</a>
+                <a href="?page={{ executions.previous_page_number }}" data-no-loading>&lsaquo; Prev</a>
+            {% endif %}
+            
+            <span class="current">{{ executions.number }} / {{ executions.paginator.num_pages }}</span>
+            
+            {% if executions.has_next %}
+                <a href="?page={{ executions.next_page_number }}" data-no-loading>Next &rsaquo;</a>
+                <a href="?page={{ executions.paginator.num_pages }}" data-no-loading>Last &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function startScraping() {
+    if (confirm('Start new scraping process?')) {
+        fetch('/admin/api/scrape/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'started') {
+                alert('Scraping started! Execution ID: ' + data.execution_id);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error starting scraping: ' + error.message);
+        });
+    }
+}
+
+// Auto-refresh every 10 seconds if there are running executions
+{% for execution in executions %}
+    {% if execution.status == 'running' %}
+        <script>setTimeout(() => location.reload(), 10000);</script>
+    {% endif %}
+{% endfor %}
+</script>
+{% endblock %}

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import AdminSite
 from django.utils.html import format_html
-from .models import Company, Executive, Office, ResearchHistory
+from .models import Company, Executive, Office, ResearchHistory, ExecutionHistory
 
 class CustomAdminSite(AdminSite):
     site_header = '🏢 Company Research System'
@@ -110,6 +110,37 @@ class ResearchHistoryAdmin(admin.ModelAdmin):
         new = obj.new_value[:30] + '...' if len(obj.new_value) > 30 else obj.new_value
         return format_html('<span style="color: #f44336;">{}</span> → <span style="color: #4CAF50;">{}</span>', old, new)
     change_preview.short_description = '変更内容'
+
+@admin.register(ExecutionHistory, site=custom_admin_site)
+class ExecutionHistoryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'started_at', 'status_display', 'progress_display', 'duration_display')
+    list_filter = ('status', 'started_at')
+    readonly_fields = ('started_at', 'completed_at', 'duration_display')
+    ordering = ('-started_at',)
+    
+    def status_display(self, obj):
+        colors = {'running': '#ff9800', 'completed': '#4caf50', 'failed': '#f44336'}
+        color = colors.get(obj.status, '#666')
+        return format_html('<span style="color: {}; font-weight: bold;">{}</span>', 
+                          color, obj.get_status_display())
+    status_display.short_description = 'ステータス'
+    
+    def progress_display(self, obj):
+        if obj.total_companies > 0:
+            percentage = (obj.processed_companies / obj.total_companies) * 100
+            return format_html('{}/{} ({:.1f}%)', obj.processed_companies, obj.total_companies, percentage)
+        return f"{obj.processed_companies}/0"
+    progress_display.short_description = "進捗"
+    
+    def duration_display(self, obj):
+        duration = obj.duration
+        if duration:
+            total_seconds = int(duration.total_seconds())
+            minutes = total_seconds // 60
+            seconds = total_seconds % 60
+            return f"{minutes}分{seconds}秒"
+        return "-"
+    duration_display.short_description = "実行時間"
 
 # Register models with custom admin site
 custom_admin_site.register(Company, CompanyAdmin)

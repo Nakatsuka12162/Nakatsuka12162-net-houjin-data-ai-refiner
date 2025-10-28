@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class Company(models.Model):
     # Basic Corporate Info
@@ -113,3 +114,31 @@ class ResearchHistory(models.Model):
     
     def __str__(self):
         return f"{self.corporate_number} - {self.changed_field} ({self.timestamp})"
+
+class ExecutionHistory(models.Model):
+    STATUS_CHOICES = [
+        ('running', '実行中'),
+        ('completed', '完了'),
+        ('failed', '失敗'),
+    ]
+    
+    started_at = models.DateTimeField(default=timezone.now, verbose_name="開始時刻")
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="完了時刻")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='running', verbose_name="ステータス")
+    total_companies = models.IntegerField(default=0, verbose_name="総会社数")
+    processed_companies = models.IntegerField(default=0, verbose_name="処理済み会社数")
+    error_message = models.TextField(blank=True, verbose_name="エラーメッセージ")
+    
+    class Meta:
+        verbose_name = "実行履歴"
+        verbose_name_plural = "実行履歴一覧"
+        ordering = ['-started_at']
+    
+    def __str__(self):
+        return f"{self.started_at.strftime('%Y-%m-%d %H:%M:%S')} - {self.get_status_display()}"
+    
+    @property
+    def duration(self):
+        if self.completed_at:
+            return self.completed_at - self.started_at
+        return timezone.now() - self.started_at

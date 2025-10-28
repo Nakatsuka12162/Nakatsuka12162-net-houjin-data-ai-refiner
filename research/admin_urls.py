@@ -12,6 +12,7 @@ urlpatterns = [
     path('executives/', admin_views.executive_list, name='executive_list'),
     path('offices/', admin_views.office_list, name='office_list'),
     path('history/', admin_views.history_list, name='history_list'),
+    path('scraping-history/', admin_views.scraping_history, name='scraping_history'),
     
     path('export/companies.csv', admin_views.export_companies_csv, name='export_companies'),
     path('api/scrape/', admin_views.trigger_scraping, name='trigger_scraping'),

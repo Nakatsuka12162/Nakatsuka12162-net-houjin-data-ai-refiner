@@ -261,7 +261,9 @@
             <a href="{% url 'history_list' %}" {% if 'history' in request.resolver_match.url_name %}class="active"{% endif %}>
                 <i class="fas fa-history"></i> History
             </a>
-            
+            <a href="{% url 'scraping_history' %}" {% if request.resolver_match.url_name == 'scraping_history' %}class="active"{% endif %}>
+                <i class="fas fa-robot"></i> Scraping
+            </a>            
             <div class="user-menu">
                 <a href="{% url 'admin_logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
