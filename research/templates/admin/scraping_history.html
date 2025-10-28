@@ -131,13 +131,25 @@
               {% endif %}
             </td>
             <td class="config-btn-cell">
-              <button
-                onclick="showConfigDetails({{ execution.id }}, '{{ execution.spreadsheet_range|escapejs }}', '{{ execution.description|escapejs }}', {{ execution.max_companies|default:'null' }}, {{ execution.update_google_sheets|lower }}, '{{ execution.error_message|escapejs }}')"
-                class="btn btn-secondary"
-                style="font-size: 0.75rem; padding: 0.25rem 0.5rem"
-              >
-                <i class="fas fa-info-circle"></i> View Details
-              </button>
+              <div style="display: flex; gap: 0.5rem;">
+                <button
+                  onclick="showConfigDetails({{ execution.id }}, '{{ execution.spreadsheet_range|escapejs }}', '{{ execution.description|escapejs }}', {{ execution.max_companies|default:'null' }}, {{ execution.update_google_sheets|lower }}, '{{ execution.error_message|escapejs }}')"
+                  class="btn btn-secondary"
+                  style="font-size: 0.75rem; padding: 0.25rem 0.5rem"
+                >
+                  <i class="fas fa-info-circle"></i> View Details
+                </button>
+                {% if execution.status == 'completed' and execution.processed_companies > 0 %}
+                <a
+                  href="{% url 'export_execution_data' execution.id %}"
+                  class="btn btn-success"
+                  style="font-size: 0.75rem; padding: 0.25rem 0.5rem"
+                  title="Download Excel with all data"
+                >
+                  <i class="fas fa-download"></i> Export
+                </a>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% empty %}

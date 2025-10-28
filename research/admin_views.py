@@ -149,21 +149,18 @@ def history_list(request):
 
 @login_required
 def export_companies_csv(request):
-    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')  # UTF-8 with BOM
     response['Content-Disposition'] = 'attachment; filename="companies.csv"'
-    
-    # Add BOM for proper UTF-8 encoding in Excel
-    response.write('\ufeff')
     
     writer = csv.writer(response)
     writer.writerow([
-        '法人番号', '会社名', '代表者', '業種', '従業員数', '売上高', '住所',
-        '電話番号', '設立', '資本金', '事業内容', '更新日時'
+        'Corporate Number', 'Company Name', 'Representative', 'Industry', 'Employees', 'Revenue', 'Address',
+        'Phone', 'Established', 'Capital', 'Business Content', 'Updated'
     ])
     
     for company in Company.objects.all():
         writer.writerow([
-            company.corporate_number or '',
+            f"'{company.corporate_number}" if company.corporate_number else '',  # Add quote to force text
             company.company_name or '',
             company.representative_name or '',
             company.industry or '',
@@ -191,13 +188,16 @@ def export_companies_excel(request):
         ws.title = "Companies"
         
         # Headers
-        headers = ['法人番号', '会社名', '代表者', '業種', '従業員数', '売上高', '住所', '電話番号', '更新日時']
+        headers = ['Corporate Number', 'Company Name', 'Representative', 'Industry', 'Employees', 'Revenue', 'Address', 'Phone', 'Updated']
         for col, header in enumerate(headers, 1):
             ws.cell(row=1, column=col, value=header)
         
         # Data
         for row, company in enumerate(Company.objects.all(), 2):
-            ws.cell(row=row, column=1, value=company.corporate_number or '')
+            # Format corporate number as text to prevent scientific notation
+            corp_cell = ws.cell(row=row, column=1, value=company.corporate_number or '')
+            corp_cell.number_format = '@'  # Text format
+            
             ws.cell(row=row, column=2, value=company.company_name or '')
             ws.cell(row=row, column=3, value=company.representative_name or '')
             ws.cell(row=row, column=4, value=company.industry or '')
@@ -256,8 +256,8 @@ def execution_detail(request, execution_id):
     })
 
 @login_required
-def download_execution_excel(request, execution_id):
-    """Download Excel file for specific execution"""
+def export_execution_data(request, execution_id):
+    """Export all data from specific execution"""
     execution = get_object_or_404(ExecutionHistory, id=execution_id)
     
     # Get companies from this execution
@@ -273,80 +273,49 @@ def download_execution_excel(request, execution_id):
     
     try:
         import openpyxl
-        from openpyxl.styles import Font, PatternFill
+        from openpyxl.styles import NamedStyle
         from io import BytesIO
         
-        # Create workbook
         wb = openpyxl.Workbook()
+        
+        # Create text style to prevent scientific notation
+        text_style = NamedStyle(name="text_style")
+        text_style.number_format = '@'  # Text format
         
         # Companies sheet
         ws1 = wb.active
         ws1.title = "Companies"
         
-        # Headers
-        headers = [
-            '法人番号', '会社名', '会社名かな', '英文企業名', '代表者名', '代表者かな', 
-            '代表者年齢', '郵便番号', '住所', '電話番号', 'FAX番号', 'URL',
-            '創業', '設立', '資本金', '業種', '事業内容', '売上高', '純利益',
-            '従業員数', '平均年齢', '平均年収', '役員数', '株主数', '取引銀行',
-            '事業所数', '店舗数', '更新日時'
-        ]
-        
-        # Write headers
+        headers = ['Corporate Number', 'Company Name', 'Representative', 'Industry', 'Employees', 'Revenue', 'Address', 'Phone', 'Updated']
         for col, header in enumerate(headers, 1):
-            cell = ws1.cell(row=1, column=col, value=header)
-            cell.font = Font(bold=True)
-            cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            ws1.cell(row=1, column=col, value=header)
         
-        # Write company data
         for row, company in enumerate(companies, 2):
-            data = [
-                company.corporate_number or '',
-                company.company_name or '',
-                company.company_name_kana or '',
-                company.english_name or '',
-                company.representative_name or '',
-                company.representative_kana or '',
-                company.representative_age or '',
-                company.postal_code or '',
-                company.address or '',
-                company.phone or '',
-                company.fax or '',
-                company.url or '',
-                company.founded or '',
-                company.established or '',
-                company.capital or '',
-                company.industry or '',
-                company.business_content or '',
-                company.revenue or '',
-                company.net_profit or '',
-                company.employee_count or '',
-                company.average_age or '',
-                company.average_salary or '',
-                company.executive_count or '',
-                company.shareholder_count or '',
-                company.main_bank or '',
-                company.office_count or '',
-                company.store_count or '',
-                company.updated_at.strftime('%Y-%m-%d %H:%M:%S') if company.updated_at else ''
-            ]
+            # Format corporate number as text to prevent scientific notation
+            corp_cell = ws1.cell(row=row, column=1, value=company.corporate_number or '')
+            corp_cell.number_format = '@'
             
-            for col, value in enumerate(data, 1):
-                ws1.cell(row=row, column=col, value=value)
+            ws1.cell(row=row, column=2, value=company.company_name or '')
+            ws1.cell(row=row, column=3, value=company.representative_name or '')
+            ws1.cell(row=row, column=4, value=company.industry or '')
+            ws1.cell(row=row, column=5, value=company.employee_count or '')
+            ws1.cell(row=row, column=6, value=company.revenue or '')
+            ws1.cell(row=row, column=7, value=company.address or '')
+            ws1.cell(row=row, column=8, value=company.phone or '')
+            ws1.cell(row=row, column=9, value=company.updated_at.strftime('%Y-%m-%d %H:%M:%S') if company.updated_at else '')
         
         # Executives sheet
         ws2 = wb.create_sheet("Executives")
-        exec_headers = ['法人番号', '会社名', '役職名', '役員名', 'ふりがな', '順序']
-        
+        exec_headers = ['Corporate Number', 'Company Name', 'Position', 'Name', 'Name Kana', 'Order']
         for col, header in enumerate(exec_headers, 1):
-            cell = ws2.cell(row=1, column=col, value=header)
-            cell.font = Font(bold=True)
-            cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            ws2.cell(row=1, column=col, value=header)
         
         exec_row = 2
         for company in companies:
             for executive in company.executives.all():
-                ws2.cell(row=exec_row, column=1, value=company.corporate_number)
+                corp_cell = ws2.cell(row=exec_row, column=1, value=company.corporate_number)
+                corp_cell.number_format = '@'
+                
                 ws2.cell(row=exec_row, column=2, value=company.company_name)
                 ws2.cell(row=exec_row, column=3, value=executive.position)
                 ws2.cell(row=exec_row, column=4, value=executive.name)
@@ -356,17 +325,16 @@ def download_execution_excel(request, execution_id):
         
         # Offices sheet
         ws3 = wb.create_sheet("Offices")
-        office_headers = ['法人番号', '会社名', '事業所名', '郵便番号', '住所', '電話番号', '業務内容', '順序']
-        
+        office_headers = ['Corporate Number', 'Company Name', 'Office Name', 'Postal Code', 'Address', 'Phone', 'Business Content', 'Order']
         for col, header in enumerate(office_headers, 1):
-            cell = ws3.cell(row=1, column=col, value=header)
-            cell.font = Font(bold=True)
-            cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            ws3.cell(row=1, column=col, value=header)
         
         office_row = 2
         for company in companies:
             for office in company.offices.all():
-                ws3.cell(row=office_row, column=1, value=company.corporate_number)
+                corp_cell = ws3.cell(row=office_row, column=1, value=company.corporate_number)
+                corp_cell.number_format = '@'
+                
                 ws3.cell(row=office_row, column=2, value=company.company_name)
                 ws3.cell(row=office_row, column=3, value=office.name)
                 ws3.cell(row=office_row, column=4, value=office.postal_code)
@@ -376,21 +344,6 @@ def download_execution_excel(request, execution_id):
                 ws3.cell(row=office_row, column=8, value=office.order)
                 office_row += 1
         
-        # Auto-adjust column widths for all sheets
-        for ws in [ws1, ws2, ws3]:
-            for column in ws.columns:
-                max_length = 0
-                column_letter = column[0].column_letter
-                for cell in column:
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
-                    except:
-                        pass
-                adjusted_width = min(max_length + 2, 50)
-                ws.column_dimensions[column_letter].width = adjusted_width
-        
-        # Save to BytesIO
         output = BytesIO()
         wb.save(output)
         output.seek(0)
@@ -404,19 +357,17 @@ def download_execution_excel(request, execution_id):
         return response
         
     except ImportError:
-        # Fallback to CSV if openpyxl not available
-        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        # Fallback to CSV with proper encoding
+        response = HttpResponse(content_type='text/csv; charset=utf-8-sig')  # UTF-8 with BOM
         filename = f"execution_{execution_id}_{execution.started_at.strftime('%Y%m%d_%H%M%S')}.csv"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         writer = csv.writer(response)
-        writer.writerow([
-            '法人番号', '会社名', '代表者名', '業種', '従業員数', '売上高', '住所', '更新日時'
-        ])
+        writer.writerow(['Corporate Number', 'Company Name', 'Representative', 'Industry', 'Employees', 'Revenue', 'Address', 'Updated'])
         
         for company in companies:
             writer.writerow([
-                company.corporate_number or '',
+                f"'{company.corporate_number}" if company.corporate_number else '',  # Add quote to force text
                 company.company_name or '',
                 company.representative_name or '',
                 company.industry or '',

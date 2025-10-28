@@ -14,7 +14,7 @@ urlpatterns = [
     path('history/', admin_views.history_list, name='history_list'),
     path('scraping-history/', admin_views.scraping_history, name='scraping_history'),
     path('execution/<int:execution_id>/', admin_views.execution_detail, name='execution_detail'),
-    path('execution/<int:execution_id>/download/', admin_views.download_execution_excel, name='download_execution_excel'),
+    path('execution/<int:execution_id>/download/', admin_views.export_execution_data, name='export_execution_data'),
     
     path('export/companies.csv', admin_views.export_companies_csv, name='export_companies'),
     path('export/companies.xlsx', admin_views.export_companies_excel, name='export_companies_excel'),
