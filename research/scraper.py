@@ -109,7 +109,16 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
     "役職名２": "", "役員名２": "", "ふりがな２": "",
     "役職名３": "", "役員名３": "", "ふりがな３": "",
     "役職名４": "", "役員名４": "", "ふりがな４": "",
-    "役職名５": "", "役員名５": "", "ふりがな５": ""
+    "役職名５": "", "役員名５": "", "ふりがな５": "",
+    "役職名６": "", "役員名６": "", "ふりがな６": "",
+    "役職名７": "", "役員名７": "", "ふりがな７": "",
+    "役職名８": "", "役員名８": "", "ふりがな８": "",
+    "役職名９": "", "役員名９": "", "ふりがな９": "",
+    "役職名１０": "", "役員名１０": "", "ふりがな１０": "",
+    "役職名１１": "", "役員名１１": "", "ふりがな１１": "",
+    "役職名１２": "", "役員名１２": "", "ふりがな１２": "",
+    "役職名１３": "", "役員名１３": "", "ふりがな１３": "",
+    "役職名１４": "", "役員名１４": "", "ふりがな１４": ""
   },
   "拠点・展開規模": {
     "事業所数": "",
@@ -118,7 +127,18 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
   "拠点・事業所一覧": {
     "事業所名１": "", "郵便番号１": "", "住所１": "", "電話番号１": "", "扱い品目・業務内容１": "",
     "事業所名２": "", "郵便番号２": "", "住所２": "", "電話番号２": "", "扱い品目・業務内容２": "",
-    "事業所名３": "", "郵便番号３": "", "住所３": "", "電話番号３": "", "扱い品目・業務内容３": ""
+    "事業所名３": "", "郵便番号３": "", "住所３": "", "電話番号３": "", "扱い品目・業務内容３": "",
+    "事業所名４": "", "郵便番号４": "", "住所４": "", "電話番号４": "", "扱い品目・業務内容４": "",
+    "事業所名５": "", "郵便番号５": "", "住所５": "", "電話番号５": "", "扱い品目・業務内容５": "",
+    "事業所名６": "", "郵便番号６": "", "住所６": "", "電話番号６": "", "扱い品目・業務内容６": "",
+    "事業所名７": "", "郵便番号７": "", "住所７": "", "電話番号７": "", "扱い品目・業務内容７": "",
+    "事業所名８": "", "郵便番号８": "", "住所８": "", "電話番号８": "", "扱い品目・業務内容８": "",
+    "事業所名９": "", "郵便番号９": "", "住所９": "", "電話番号９": "", "扱い品目・業務内容９": "",
+    "事業所名１０": "", "郵便番号１０": "", "住所１０": "", "電話番号１０": "", "扱い品目・業務内容１０": "",
+    "事業所名１１": "", "郵便番号１１": "", "住所１１": "", "電話番号１１": "", "扱い品目・業務内容１１": "",
+    "事業所名１２": "", "郵便番号１２": "", "住所１２": "", "電話番号１２": "", "扱い品目・業務内容１２": "",
+    "事業所名１３": "", "郵便番号１３": "", "住所１３": "", "電話番号１３": "", "扱い品目・業務内容１３": "",
+    "事業所名１４": "", "郵便番号１４": "", "住所１４": "", "電話番号１４": "", "扱い品目・業務内容１４": ""
   },
   "URL": {
     "会社概要ページURL": "",
@@ -176,13 +196,13 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
         
         try:
             response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "あなたは会社情報を正確にJSON形式で出力するアシスタントです。JSONのみを返し、説明文は不要です。"},
                     {"role": "user", "content": final_prompt}
                 ],
                 temperature=0,
-                max_tokens=4096
+                max_completion_tokens=4096
             )
             
             content = response.choices[0].message.content.strip()
@@ -234,7 +254,8 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
         src = parsed.get("役員名簿", {}) or {}
         out = []
         i = 1
-        while i <= 20:  # Limit to prevent infinite loops
+        # Check for data existence using both half-width and full-width numbers
+        while i <= 20:  # Check up to 20 executives
             # Try both half-width and full-width numbers
             role_key = f"役職名{i}"
             name_key = f"役員名{i}"
@@ -252,22 +273,27 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
             name = src.get(name_key, "")
             kana = src.get(kana_key, "")
             
-            if role or name:
+            # Add if any field has data
+            if role or name or kana:
                 out.append({
                     "役職名": role,
                     "役員名": name,
                     "ふりがな": kana,
                 })
-            elif not role and not name and i > 5:  # Stop if no data after first 5
-                break
-            i += 1
+                i += 1
+            else:
+                # Stop if no data found
+                if i > 5:  # Continue checking at least first 5
+                    break
+                i += 1
         return out
 
     def extract_locations(self, parsed: dict):
         src = parsed.get("拠点・事業所一覧", {}) or {}
         out = []
         i = 1
-        while i <= 20:  # Limit to prevent infinite loops
+        # Check for data existence using both half-width and full-width numbers
+        while i <= 20:  # Check up to 20 locations
             # Try both half-width and full-width numbers
             name_key = f"事業所名{i}"
             postal_key = f"郵便番号{i}"
@@ -293,7 +319,8 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
             phone = src.get(phone_key, "")
             content = src.get(content_key, "")
             
-            if name or addr:
+            # Add if any field has data
+            if name or postal or addr or phone or content:
                 out.append({
                     "事業所名": name,
                     "郵便番号": postal,
@@ -301,9 +328,12 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
                     "電話番号": phone,
                     "扱い品目・業務内容": content,
                 })
-            elif not name and not addr and i > 3:  # Stop if no data after first 3
-                break
-            i += 1
+                i += 1
+            else:
+                # Stop if no data found
+                if i > 5:  # Continue checking at least first 5
+                    break
+                i += 1
         return out
 
     @transaction.atomic
