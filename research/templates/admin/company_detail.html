@@ -1,146 +1,335 @@
 {% extends 'admin/base.html' %}
 
 {% block content %}
+<style>
+    .info-section {
+        padding: 1.25rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+        height: 100%;
+    }
+    .info-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+    .info-section h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    }
+    .info-row {
+        display: flex;
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        font-weight: 600;
+        min-width: 140px;
+        color: #374151;
+        flex-shrink: 0;
+    }
+    .info-value {
+        color: #1f2937;
+        word-break: break-word;
+        flex: 1;
+    }
+    .info-value a {
+        color: #0891b2;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .info-value a:hover {
+        color: #06b6d4;
+        text-decoration: underline;
+    }
+    .item-card {
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        margin-bottom: 0.75rem;
+        transition: all 0.2s;
+        background: white;
+    }
+    .item-card:hover {
+        border-color: #0891b2;
+        box-shadow: 0 2px 8px rgba(8, 145, 178, 0.15);
+        transform: translateX(4px);
+    }
+    .item-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #0891b2, #06b6d4);
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .history-item {
+        padding: 1rem;
+        border-left: 3px solid #0891b2;
+        background: #f9fafb;
+        border-radius: 0 8px 8px 0;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s;
+    }
+    .history-item:hover {
+        background: #f3f4f6;
+        border-left-color: #06b6d4;
+        transform: translateX(4px);
+    }
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #9ca3af;
+    }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+        .info-row {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .info-label {
+            min-width: auto;
+            font-size: 0.8125rem;
+        }
+        .info-value {
+            font-size: 0.8125rem;
+            padding-left: 0.5rem;
+        }
+        .info-section h3 {
+            font-size: 1rem;
+        }
+        .item-card {
+            padding: 0.75rem;
+        }
+    }
+</style>
+
 <div class="card">
-    <div class="card-header">
-        <h2><i class="fas fa-building"></i> {{ company.company_name }}</h2>
-        <p style="margin: 0.25rem 0 0 0; color: #6b7280; font-size: 0.875rem;">
-            Corporate Number: <code style="background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 4px;">{{ company.corporate_number }}</code>
-        </p>
+    <div class="card-header" style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); color: white; border: none;">
+        <div>
+            <h2 style="margin: 0; color: white; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-building"></i> {{ company.company_name }}
+            </h2>
+            <p style="margin: 0.5rem 0 0 0; opacity: 0.9; font-size: 0.875rem;">
+                <i class="fas fa-hashtag"></i> Corporate Number: <code style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: white; font-weight: 600;">{{ company.corporate_number }}</code>
+            </p>
+        </div>
     </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+    <div class="card-body" style="padding: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+            
+            <!-- Basic Corporate Info -->
+            <div class="info-section" style="background: linear-gradient(135deg, #dce6f1 0%, #c5d9ed 100%);">
+                <h3 style="color: #1e40af;">
+                    <i class="fas fa-info-circle"></i> 基本法人情報
+                </h3>
                 <div>
-                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #374151;">
-                        <i class="fas fa-info-circle"></i> Basic Information
-                    </h3>
-                    <div class="form-group">
-                        <label>Company Name</label>
-                        <input type="text" name="company_name" value="{{ company.company_name }}" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Representative</label>
-                        <input type="text" name="representative_name" value="{{ company.representative_name|default:'' }}" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Industry</label>
-                        <input type="text" name="industry" value="{{ company.industry|default:'' }}" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Address</label>
-                        <textarea name="address" class="form-control" rows="2">{{ company.address|default:'' }}</textarea>
-                    </div>
-                </div>
-                
-                <div>
-                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #374151;">
-                        <i class="fas fa-briefcase"></i> Business Information
-                    </h3>
-                    <div class="form-group">
-                        <label>Phone</label>
-                        <input type="text" name="phone" value="{{ company.phone|default:'' }}" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Revenue</label>
-                        <input type="text" name="revenue" value="{{ company.revenue|default:'' }}" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Employee Count</label>
-                        <input type="text" name="employee_count" value="{{ company.employee_count|default:'' }}" class="form-control">
-                    </div>
+                    <div class="info-row"><span class="info-label">会社名:</span><span class="info-value">{{ company.company_name }}</span></div>
+                    <div class="info-row"><span class="info-label">会社名かな:</span><span class="info-value">{{ company.company_name_kana|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">英文企業名:</span><span class="info-value">{{ company.english_name|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">代表者名:</span><span class="info-value">{{ company.representative_name|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">代表者かな:</span><span class="info-value">{{ company.representative_kana|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">代表者年齢:</span><span class="info-value">{{ company.representative_age|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">代表者生年月日:</span><span class="info-value">{{ company.representative_birth|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">代表者出身大学:</span><span class="info-value">{{ company.representative_university|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">郵便番号:</span><span class="info-value">{{ company.postal_code|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">住所:</span><span class="info-value">{{ company.address|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">電話番号:</span><span class="info-value">{{ company.phone|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">登記住所:</span><span class="info-value">{{ company.registered_address|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">FAX番号:</span><span class="info-value">{{ company.fax|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">URL:</span><span class="info-value">{% if company.url %}<a href="{{ company.url }}" target="_blank"><i class="fas fa-external-link-alt"></i> {{ company.url }}</a>{% else %}-{% endif %}</span></div>
+                    <div class="info-row"><span class="info-label">創業:</span><span class="info-value">{{ company.founded|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">設立:</span><span class="info-value">{{ company.established|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">資本金:</span><span class="info-value">{{ company.capital|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">出資金:</span><span class="info-value">{{ company.investment|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">会員数:</span><span class="info-value">{{ company.member_count|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">組合員数:</span><span class="info-value">{{ company.union_member_count|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">上場市場:</span><span class="info-value">{{ company.stock_market|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">証券コード:</span><span class="info-value">{{ company.stock_code|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">決算期:</span><span class="info-value">{{ company.fiscal_year_end|default:"-" }}</span></div>
                 </div>
             </div>
             
-            <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Save Changes
-                </button>
-                <a href="{% url 'company_list' %}" class="btn btn-secondary" data-no-loading>
-                    <i class="fas fa-arrow-left"></i> Back to List
-                </a>
+            <!-- Financial Info -->
+            <div class="info-section" style="background: linear-gradient(135deg, #e2efda 0%, #c6e0b4 100%);">
+                <h3 style="color: #15803d;">
+                    <i class="fas fa-chart-line"></i> 経営・財務情報
+                </h3>
+                <div>
+                    <div class="info-row"><span class="info-label">売上高:</span><span class="info-value">{{ company.revenue|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">純利益:</span><span class="info-value">{{ company.net_profit|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">預金量:</span><span class="info-value">{{ company.deposits|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">従業員数:</span><span class="info-value">{{ company.employee_count|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">平均年齢:</span><span class="info-value">{{ company.average_age|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">平均年収:</span><span class="info-value">{{ company.average_salary|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">役員数:</span><span class="info-value">{{ company.executive_count|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">株主数:</span><span class="info-value">{{ company.shareholder_count|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">取引銀行:</span><span class="info-value">{{ company.main_bank|default:"-" }}</span></div>
+                </div>
             </div>
-        </form>
+            
+            <!-- Business Info -->
+            <div class="info-section" style="background: linear-gradient(135deg, #fce4d6 0%, #f4b183 100%);">
+                <h3 style="color: #c2410c;">
+                    <i class="fas fa-briefcase"></i> 事業・業務内容
+                </h3>
+                <div>
+                    <div class="info-row"><span class="info-label">業種:</span><span class="info-value">{{ company.industry|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">事業内容:</span><span class="info-value">{{ company.business_content|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">主要事業:</span><span class="info-value">{{ company.main_business|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">事業エリア:</span><span class="info-value">{{ company.business_area|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">系列:</span><span class="info-value">{{ company.group_affiliation|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">販売先:</span><span class="info-value">{{ company.sales_destination|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">仕入先:</span><span class="info-value">{{ company.supplier|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">事業所数:</span><span class="info-value">{{ company.office_count|default:"-" }}</span></div>
+                    <div class="info-row"><span class="info-label">店舗数:</span><span class="info-value">{{ company.store_count|default:"-" }}</span></div>
+                </div>
+            </div>
+            
+            <!-- Related URLs -->
+            <div class="info-section" style="background: linear-gradient(135deg, #d9d9d9 0%, #bfbfbf 100%);">
+                <h3 style="color: #374151;">
+                    <i class="fas fa-link"></i> 関連URL
+                </h3>
+                <div>
+                    <div class="info-row"><span class="info-label">会社概要:</span><span class="info-value">{% if company.company_overview_url %}<a href="{{ company.company_overview_url }}" target="_blank"><i class="fas fa-external-link-alt"></i> Link</a>{% else %}-{% endif %}</span></div>
+                    <div class="info-row"><span class="info-label">拠点・事業所:</span><span class="info-value">{% if company.office_list_url %}<a href="{{ company.office_list_url }}" target="_blank"><i class="fas fa-external-link-alt"></i> Link</a>{% else %}-{% endif %}</span></div>
+                    <div class="info-row"><span class="info-label">組織図:</span><span class="info-value">{% if company.organization_chart_url %}<a href="{{ company.organization_chart_url }}" target="_blank"><i class="fas fa-external-link-alt"></i> Link</a>{% else %}-{% endif %}</span></div>
+                    <div class="info-row"><span class="info-label">関係会社:</span><span class="info-value">{% if company.related_companies_url %}<a href="{{ company.related_companies_url }}" target="_blank"><i class="fas fa-external-link-alt"></i> Link</a>{% else %}-{% endif %}</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 2rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'company_list' %}" class="btn btn-secondary" data-no-loading>
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin-top: 1.25rem;">
-    <div class="card">
-        <div class="card-header">
-            <h3><i class="fas fa-users"></i> Executives ({{ executives.count }})</h3>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-top: 1.5rem;">
+    <div class="card" style="border-top: 4px solid #f59e0b; overflow: hidden;">
+        <div class="card-header" style="background: linear-gradient(135deg, #f8cbad 0%, #f4b084 100%);">
+            <h3 style="margin: 0; color: #78350f; display: flex; align-items: center; justify-content: space-between;">
+                <span><i class="fas fa-users"></i> 役員名簿</span>
+                <span class="badge" style="background: #78350f; color: white; font-size: 0.875rem;">{{ executives.count }}</span>
+            </h3>
         </div>
-        <div class="card-body">
+        <div class="card-body" style="max-height: 600px; overflow-y: auto;">
             {% for executive in executives %}
-            <div style="padding: 0.625rem 0; border-bottom: 1px solid #e5e7eb;">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.25rem;">
-                    <span class="badge badge-warning" style="font-size: 0.75rem;">{{ executive.position }}</span>
-                    <span style="font-size: 0.75rem; color: #9ca3af;">#{{ executive.order }}</span>
+            <div class="item-card">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                    <span class="item-badge">{{ executive.position }}</span>
+                    <span style="font-size: 0.75rem; color: #9ca3af; font-weight: 600;">#{{ executive.order }}</span>
                 </div>
-                <div style="font-weight: 500; font-size: 0.875rem; color: #1c1e21;">{{ executive.name }}</div>
+                <div style="font-weight: 600; font-size: 0.9375rem; color: #1c1e21; margin-bottom: 0.25rem;">
+                    <i class="fas fa-user-tie" style="color: #0891b2; margin-right: 0.25rem;"></i>{{ executive.name }}
+                </div>
                 {% if executive.name_kana %}
-                    <div style="font-size: 0.8125rem; color: #6b7280;">{{ executive.name_kana }}</div>
+                    <div style="font-size: 0.8125rem; color: #6b7280; padding-left: 1.5rem;">{{ executive.name_kana }}</div>
                 {% endif %}
             </div>
             {% empty %}
-            <p style="color: #9ca3af; text-align: center; padding: 1.5rem; font-size: 0.875rem;">
-                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;"><i class="fas fa-user"></i></div>
-                No executives recorded
-            </p>
+            <div class="empty-state">
+                <i class="fas fa-user-slash"></i>
+                <div style="font-size: 0.9375rem; font-weight: 500;">No executives recorded</div>
+            </div>
             {% endfor %}
         </div>
     </div>
     
-    <div class="card">
-        <div class="card-header">
-            <h3><i class="fas fa-map-marker-alt"></i> Offices ({{ offices.count }})</h3>
+    <div class="card" style="border-top: 4px solid #eab308; overflow: hidden;">
+        <div class="card-header" style="background: linear-gradient(135deg, #fff2cc 0%, #ffe699 100%);">
+            <h3 style="margin: 0; color: #713f12; display: flex; align-items: center; justify-content: space-between;">
+                <span><i class="fas fa-map-marker-alt"></i> 拠点・事業所一覧</span>
+                <span class="badge" style="background: #713f12; color: white; font-size: 0.875rem;">{{ offices.count }}</span>
+            </h3>
         </div>
-        <div class="card-body">
+        <div class="card-body" style="max-height: 600px; overflow-y: auto;">
             {% for office in offices %}
-            <div style="padding: 0.625rem 0; border-bottom: 1px solid #e5e7eb;">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.25rem;">
-                    <div style="font-weight: 500; font-size: 0.875rem; color: #1c1e21;">{{ office.name }}</div>
-                    <span style="font-size: 0.75rem; color: #9ca3af;">#{{ office.order }}</span>
+            <div class="item-card">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                    <div style="font-weight: 600; font-size: 0.9375rem; color: #1c1e21; flex: 1;">
+                        <i class="fas fa-building" style="color: #eab308; margin-right: 0.25rem;"></i>{{ office.name }}
+                    </div>
+                    <span style="font-size: 0.75rem; color: #9ca3af; font-weight: 600;">#{{ office.order }}</span>
                 </div>
-                <div style="font-size: 0.8125rem; color: #6b7280;">{{ office.address }}</div>
+                {% if office.postal_code %}
+                <div style="font-size: 0.8125rem; color: #6b7280; margin-bottom: 0.25rem;">
+                    <i class="fas fa-mail-bulk" style="width: 16px;"></i> 〒{{ office.postal_code }}
+                </div>
+                {% endif %}
+                <div style="font-size: 0.8125rem; color: #6b7280; margin-bottom: 0.25rem;">
+                    <i class="fas fa-map-marked-alt" style="width: 16px;"></i> {{ office.address }}
+                </div>
                 {% if office.phone %}
-                    <div style="font-size: 0.8125rem; color: #6b7280; margin-top: 0.125rem;">
-                        <i class="fas fa-phone"></i> {{ office.phone }}
+                    <div style="font-size: 0.8125rem; color: #6b7280; margin-bottom: 0.25rem;">
+                        <i class="fas fa-phone" style="width: 16px;"></i> {{ office.phone }}
+                    </div>
+                {% endif %}
+                {% if office.business_content %}
+                    <div style="font-size: 0.8125rem; color: #6b7280; margin-top: 0.5rem; padding: 0.5rem; background: #f9fafb; border-radius: 4px; font-style: italic;">
+                        <i class="fas fa-briefcase" style="color: #0891b2;"></i> {{ office.business_content }}
                     </div>
                 {% endif %}
             </div>
             {% empty %}
-            <p style="color: #9ca3af; text-align: center; padding: 1.5rem; font-size: 0.875rem;">
-                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;"><i class="fas fa-building"></i></div>
-                No offices recorded
-            </p>
+            <div class="empty-state">
+                <i class="fas fa-store-slash"></i>
+                <div style="font-size: 0.9375rem; font-weight: 500;">No offices recorded</div>
+            </div>
             {% endfor %}
         </div>
     </div>
 </div>
 
-<div class="card" style="margin-top: 1.25rem;">
-    <div class="card-header">
-        <h3><i class="fas fa-history"></i> Recent Changes ({{ history.count }})</h3>
+<div class="card" style="margin-top: 1.5rem; border-top: 4px solid #0891b2;">
+    <div class="card-header" style="background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);">
+        <h3 style="margin: 0; color: #075985; display: flex; align-items: center; justify-content: space-between;">
+            <span><i class="fas fa-history"></i> Recent Changes</span>
+            <span class="badge" style="background: #075985; color: white; font-size: 0.875rem;">{{ history.count }}</span>
+        </h3>
     </div>
-    <div class="card-body">
+    <div class="card-body" style="max-height: 500px; overflow-y: auto;">
         {% for change in history %}
-        <div style="padding: 0.625rem 0; border-bottom: 1px solid #e5e7eb;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                <span class="badge badge-primary">{{ change.changed_field }}</span>
-                <span style="font-size: 0.8125rem; color: #6b7280;">{{ change.timestamp|date:"m/d H:i" }}</span>
+        <div class="history-item">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span class="item-badge" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">{{ change.changed_field }}</span>
+                <span style="font-size: 0.8125rem; color: #6b7280; font-weight: 600;">
+                    <i class="fas fa-clock"></i> {{ change.timestamp|date:"m/d H:i" }}
+                </span>
             </div>
-            <div style="font-size: 0.8125rem;">
-                <span style="color: #dc2626;">{{ change.old_value|truncatechars:40 }}</span> 
-                <span style="color: #9ca3af;">→</span> 
-                <span style="color: #059669;">{{ change.new_value|truncatechars:40 }}</span>
+            <div style="font-size: 0.8125rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span style="color: #dc2626; background: #fee2e2; padding: 0.25rem 0.5rem; border-radius: 4px; font-family: monospace;">{{ change.old_value|truncatechars:40 }}</span> 
+                <i class="fas fa-arrow-right" style="color: #0891b2;"></i>
+                <span style="color: #059669; background: #d1fae5; padding: 0.25rem 0.5rem; border-radius: 4px; font-family: monospace;">{{ change.new_value|truncatechars:40 }}</span>
             </div>
         </div>
         {% empty %}
-        <p style="color: #9ca3af; text-align: center; padding: 1.5rem; font-size: 0.875rem;">
-            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;"><i class="fas fa-clipboard"></i></div>
-            No changes recorded
-        </p>
+        <div class="empty-state">
+            <i class="fas fa-clipboard-list"></i>
+            <div style="font-size: 0.9375rem; font-weight: 500;">No changes recorded</div>
+        </div>
         {% endfor %}
     </div>
 </div>

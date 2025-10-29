@@ -451,6 +451,10 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
         self.log(f"Saved company to database: {corp_no} - {company.company_name}")
         return 1
 
+    def scrape_companies_with_config(self):
+        """Alias for scrape_companies - uses configured settings"""
+        return self.scrape_companies()
+    
     def scrape_companies(self):
         """Main scraping method - one company at a time for reliability"""
         try:
@@ -566,38 +570,123 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
             self.log(f"Sheet error for {corp_no}: {e}", 'ERROR')
     
     def write_simple_form_to_sheet(self, ws, parsed):
-        """Simple sheet writing without complex formatting"""
+        """Write comprehensive company details to sheet with color formatting"""
         rows = []
         
+        # Section 1: Basic Corporate Info (Blue)
         info = parsed.get("基本法人情報（識別・概要）", {}) or {}
-        rows.append(["基本情報", "企業法人番号", info.get("企業法人番号", "")])
-        rows.append(["", "会社名", info.get("会社名", "")])
-        rows.append(["", "代表者名", info.get("代表者名", "")])
-        rows.append(["", "住所", info.get("住所", "")])
-        rows.append(["", "電話番号", info.get("電話番号", "")])
-        rows.append(["", "設立", info.get("設立", "")])
-        rows.append(["", "資本金", info.get("資本金", "")])
+        rows.append(["【基本法人情報】", "", ""])
+        rows.append(["企業法人番号", info.get("企業法人番号", ""), ""])
+        rows.append(["会社名", info.get("会社名", ""), ""])
+        rows.append(["会社名かな", info.get("会社名かな", ""), ""])
+        rows.append(["英文企業名", info.get("英文企業名", ""), ""])
+        rows.append(["代表者名", info.get("代表者名", ""), ""])
+        rows.append(["代表者かな", info.get("代表者かな", ""), ""])
+        rows.append(["代表者年齢", info.get("代表者年齢", ""), ""])
+        rows.append(["代表者生年月日", info.get("代表者生年月日", ""), ""])
+        rows.append(["代表者出身大学", info.get("代表者出身大学", ""), ""])
+        rows.append(["郵便番号", info.get("郵便番号", ""), ""])
+        rows.append(["住所", info.get("住所", ""), ""])
+        rows.append(["電話番号", info.get("電話番号", ""), ""])
+        rows.append(["登記住所", info.get("登記住所", ""), ""])
+        rows.append(["FAX番号", info.get("FAX番号", ""), ""])
+        rows.append(["URL", info.get("URL", ""), ""])
+        rows.append(["創業", info.get("創業", ""), ""])
+        rows.append(["設立", info.get("設立", ""), ""])
+        rows.append(["資本金", info.get("資本金", ""), ""])
+        rows.append(["出資金", info.get("出資金", ""), ""])
+        rows.append(["会員数", info.get("会員数", ""), ""])
+        rows.append(["組合員数", info.get("組合員数", ""), ""])
+        rows.append(["上場市場", info.get("上場市場", ""), ""])
+        rows.append(["証券コード", info.get("証券コード", ""), ""])
+        rows.append(["決算期", info.get("決算期", ""), ""])
+        basic_end = len(rows)
         
+        # Section 2: Financial Info (Green)
+        rows.append(["", "", ""])
+        rows.append(["【経営・財務情報】", "", ""])
         fin = parsed.get("経営・財務情報", {}) or {}
-        rows.append(["財務情報", "売上高", fin.get("売上高", "")])
-        rows.append(["", "従業員数", fin.get("従業員数", "")])
-        rows.append(["", "平均年収", fin.get("平均年収", "")])
+        rows.append(["売上高", fin.get("売上高", ""), ""])
+        rows.append(["純利益", fin.get("純利益", ""), ""])
+        rows.append(["預金量", fin.get("預金量", ""), ""])
+        rows.append(["従業員数", fin.get("従業員数", ""), ""])
+        rows.append(["平均年齢", fin.get("平均年齢", ""), ""])
+        rows.append(["平均年収", fin.get("平均年収", ""), ""])
+        rows.append(["役員数", fin.get("役員数", ""), ""])
+        rows.append(["株主数", fin.get("株主数", ""), ""])
+        rows.append(["取引銀行", fin.get("取引銀行", ""), ""])
+        fin_end = len(rows)
         
+        # Section 3: Business Info (Orange)
+        rows.append(["", "", ""])
+        rows.append(["【事業・業務内容】", "", ""])
         biz = parsed.get("事業・業務内容", {}) or {}
-        rows.append(["事業情報", "業種", biz.get("業種", "")])
-        rows.append(["", "事業内容", biz.get("事業内容", "")])
+        rows.append(["業種", biz.get("業種", ""), ""])
+        rows.append(["事業内容", biz.get("事業内容", ""), ""])
+        rows.append(["主要事業", biz.get("主要事業", ""), ""])
+        rows.append(["事業エリア", biz.get("事業エリア", ""), ""])
+        rows.append(["系列", biz.get("系列", ""), ""])
+        rows.append(["販売先", biz.get("販売先", ""), ""])
+        rows.append(["仕入先", biz.get("仕入先", ""), ""])
+        biz_end = len(rows)
         
+        # Section 4: Executives (Pink)
+        rows.append(["", "", ""])
+        rows.append(["【役員名簿】", "", ""])
+        rows.append(["役職名", "役員名", "ふりがな"])
+        exec_start = len(rows)
         roles = self.extract_roles(parsed)
-        for i, role in enumerate(roles[:10], 1):
-            rows.append([f"役員{i}", role["役職名"], role["役員名"]])
+        for role in roles:
+            rows.append([role["役職名"], role["役員名"], role["ふりがな"]])
+        exec_end = len(rows)
         
+        # Section 5: Scale (Yellow)
+        rows.append(["", "", ""])
+        rows.append(["【拠点・展開規模】", "", ""])
+        scale = parsed.get("拠点・展開規模", {}) or {}
+        rows.append(["事業所数", scale.get("事業所数", ""), ""])
+        rows.append(["店舗数", scale.get("店舗数", ""), ""])
+        scale_end = len(rows)
+        
+        # Section 6: Offices (Yellow)
+        rows.append(["", "", ""])
+        rows.append(["【拠点・事業所一覧】", "", ""])
+        rows.append(["事業所名", "郵便番号", "住所", "電話番号", "扱い品目・業務内容"])
+        office_start = len(rows)
         locs = self.extract_locations(parsed)
-        for i, loc in enumerate(locs[:10], 1):
-            rows.append([f"拠点{i}", loc["事業所名"], loc["住所"]])
+        for loc in locs:
+            rows.append([loc["事業所名"], loc["郵便番号"], loc["住所"], loc["電話番号"], loc["扱い品目・業務内容"]])
+        office_end = len(rows)
         
-        # Single update - no formatting
+        # Section 7: URLs (Gray)
+        rows.append(["", "", ""])
+        rows.append(["【関連URL】", "", ""])
+        urls = parsed.get("URL", {}) or {}
+        rows.append(["会社概要ページURL", urls.get("会社概要ページURL", ""), ""])
+        rows.append(["拠点・事業所ページURL", urls.get("拠点・事業所ページURL", ""), ""])
+        rows.append(["組織図ページURL", urls.get("組織図ページURL", ""), ""])
+        rows.append(["関係会社ページURL", urls.get("関係会社ページURL", ""), ""])
+        
+        # Write all data
         ws.clear()
         ws.update("A1", rows, value_input_option='RAW')
+        
+        # Apply color formatting
+        try:
+            # Blue - Basic Info
+            format_cell_range(ws, f"A1:C{basic_end}", CellFormat(backgroundColor=Color(*[x/255 for x in COLOR_I])))
+            # Green - Financial
+            format_cell_range(ws, f"A{basic_end+2}:C{fin_end}", CellFormat(backgroundColor=Color(*[x/255 for x in COLOR_II])))
+            # Orange - Business
+            format_cell_range(ws, f"A{fin_end+2}:C{biz_end}", CellFormat(backgroundColor=Color(*[x/255 for x in COLOR_III])))
+            # Pink - Executives
+            format_cell_range(ws, f"A{biz_end+2}:C{exec_end}", CellFormat(backgroundColor=Color(*[x/255 for x in COLOR_IV])))
+            # Yellow - Scale & Offices
+            format_cell_range(ws, f"A{exec_end+2}:E{office_end}", CellFormat(backgroundColor=Color(*[x/255 for x in COLOR_VI])))
+            # Gray - URLs
+            format_cell_range(ws, f"A{office_end+2}:C{len(rows)}", CellFormat(backgroundColor=Color(*[x/255 for x in COLOR_VII])))
+        except Exception as e:
+            self.log(f"Formatting error: {e}", 'WARNING')
 
     def get_or_create_company_ws(self, sh, corp_no: str, company_name: str):
         """Get or create worksheet for company"""
