@@ -17,8 +17,9 @@ urlpatterns = [
     path('execution/<int:execution_id>/download/', admin_views.export_execution_data, name='export_execution_data'),
     
     path('export/companies.csv', admin_views.export_companies_csv, name='export_companies'),
+    path('export/companies_detailed.csv', admin_views.export_companies_detailed_csv, name='export_companies_detailed'),
     path('export/companies.xlsx', admin_views.export_companies_excel, name='export_companies_excel'),
-    path('export/companies.xlsx', admin_views.export_companies_excel, name='export_companies_excel'),
+    path('export/company/<int:company_id>/detailed.csv', admin_views.export_single_company_detailed_csv, name='export_single_company_detailed'),
     path('api/scrape/', admin_views.trigger_scraping, name='trigger_scraping'),
     path('api/stats/', admin_views.api_stats, name='api_stats'),
 ]

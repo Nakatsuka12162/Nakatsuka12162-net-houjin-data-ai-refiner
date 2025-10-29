@@ -224,6 +224,210 @@ def export_companies_excel(request):
         return export_companies_csv(request)
 
 @login_required
+def export_companies_detailed_csv(request):
+    """Export detailed company information including executives and offices"""
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="companies_detailed.csv"'
+    
+    writer = csv.writer(response)
+    
+    # Comprehensive header with all fields
+    writer.writerow([
+        '企業法人番号', '会社名', '会社名かな', '英文企業名',
+        '代表者名', '代表者かな', '代表者年齢', '代表者生年月日', '代表者出身大学',
+        '郵便番号', '住所', '電話番号', '登記住所', 'FAX番号', 'URL',
+        '創業', '設立', '資本金', '出資金', '会員数', '組合員数',
+        '上場市場', '証券コード', '決算期',
+        '売上高', '純利益', '預金量', '従業員数', '平均年齢', '平均年収',
+        '役員数', '株主数', '取引銀行',
+        '業種', '事業内容', '主要事業', '事業エリア', '系列', '販売先', '仕入先',
+        '事業所数', '店舗数',
+        '会社概要URL', '拠点・事業所URL', '組織図URL', '関係会社URL',
+        '役員名簿', '拠点一覧',
+        '更新日時'
+    ])
+    
+    for company in Company.objects.all().order_by('id'):
+        # Get executives (up to 14)
+        executives = company.executives.all().order_by('order')
+        exec_list = []
+        for exec in executives:
+            exec_info = f"{exec.position}: {exec.name}"
+            if exec.name_kana:
+                exec_info += f" ({exec.name_kana})"
+            exec_list.append(exec_info)
+        executives_str = '; '.join(exec_list) if exec_list else ''
+        
+        # Get offices (up to 14)
+        offices = company.offices.all().order_by('order')
+        office_list = []
+        for office in offices:
+            office_info = f"{office.name}"
+            if office.address:
+                office_info += f" - {office.address}"
+            if office.phone:
+                office_info += f" (TEL: {office.phone})"
+            if office.business_content:
+                office_info += f" [{office.business_content}]"
+            office_list.append(office_info)
+        offices_str = '; '.join(office_list) if office_list else ''
+        
+        writer.writerow([
+            company.corporate_number or '',
+            company.company_name or '',
+            company.company_name_kana or '',
+            company.english_name or '',
+            company.representative_name or '',
+            company.representative_kana or '',
+            company.representative_age or '',
+            company.representative_birth or '',
+            company.representative_university or '',
+            company.postal_code or '',
+            company.address or '',
+            company.phone or '',
+            company.registered_address or '',
+            company.fax or '',
+            company.url or '',
+            company.founded or '',
+            company.established or '',
+            company.capital or '',
+            company.investment or '',
+            company.member_count or '',
+            company.union_member_count or '',
+            company.stock_market or '',
+            company.stock_code or '',
+            company.fiscal_year_end or '',
+            company.revenue or '',
+            company.net_profit or '',
+            company.deposits or '',
+            company.employee_count or '',
+            company.average_age or '',
+            company.average_salary or '',
+            company.executive_count or '',
+            company.shareholder_count or '',
+            company.main_bank or '',
+            company.industry or '',
+            company.business_content or '',
+            company.main_business or '',
+            company.business_area or '',
+            company.group_affiliation or '',
+            company.sales_destination or '',
+            company.supplier or '',
+            company.office_count or '',
+            company.store_count or '',
+            company.company_overview_url or '',
+            company.office_list_url or '',
+            company.organization_chart_url or '',
+            company.related_companies_url or '',
+            executives_str,
+            offices_str,
+            company.updated_at.strftime('%Y-%m-%d %H:%M:%S') if company.updated_at else ''
+        ])
+    
+    return response
+
+@login_required
+def export_single_company_detailed_csv(request, company_id):
+    """Export detailed information for a single company as CSV"""
+    company = get_object_or_404(Company, pk=company_id)
+    
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="company_detail_{company.corporate_number}.csv"'
+    
+    writer = csv.writer(response)
+    
+    # Write headers matching the actual Company model fields
+    writer.writerow([
+        '企業法人番号', '会社名', '会社名かな', '英文企業名',
+        '代表者名', '代表者かな', '代表者年齢', '代表者生年月日', '代表者出身大学',
+        '郵便番号', '住所', '電話番号', '登記住所', 'FAX番号', 'URL',
+        '創業', '設立', '資本金', '出資金', '会員数', '組合員数',
+        '上場市場', '証券コード', '決算期',
+        '売上高', '純利益', '預金量', '従業員数', '平均年齢', '平均年収',
+        '役員数', '株主数', '取引銀行',
+        '業種', '事業内容', '主要事業', '事業エリア', '系列', '販売先', '仕入先',
+        '事業所数', '店舗数',
+        '会社概要URL', '拠点・事業所URL', '組織図URL', '関係会社URL',
+        '役員名簿', '拠点一覧',
+        '更新日時'
+    ])
+    
+    # Get related executives and offices
+    executives = company.executives.all().order_by('order')
+    executives_str = '; '.join([
+        f"{exec.position}: {exec.name}" + (f" ({exec.name_kana})" if exec.name_kana else "")
+        for exec in executives
+    ])
+    
+    offices = company.offices.all().order_by('order')
+    offices_list = []
+    for office in offices:
+        office_info = office.name or ''
+        if office.address:
+            office_info += f" - {office.address}"
+        if office.phone:
+            office_info += f" (TEL: {office.phone})"
+        if office.business_content:
+            office_info += f" [{office.business_content}]"
+        offices_list.append(office_info)
+    offices_str = '; '.join(offices_list)
+    
+    # Write single company data using actual model fields
+    writer.writerow([
+        company.corporate_number or '',
+        company.company_name or '',
+        company.company_name_kana or '',
+        company.english_name or '',
+        company.representative_name or '',
+        company.representative_kana or '',
+        company.representative_age or '',
+        company.representative_birth or '',
+        company.representative_university or '',
+        company.postal_code or '',
+        company.address or '',
+        company.phone or '',
+        company.registered_address or '',
+        company.fax or '',
+        company.url or '',
+        company.founded or '',
+        company.established or '',
+        company.capital or '',
+        company.investment or '',
+        company.member_count or '',
+        company.union_member_count or '',
+        company.stock_market or '',
+        company.stock_code or '',
+        company.fiscal_year_end or '',
+        company.revenue or '',
+        company.net_profit or '',
+        company.deposits or '',
+        company.employee_count or '',
+        company.average_age or '',
+        company.average_salary or '',
+        company.executive_count or '',
+        company.shareholder_count or '',
+        company.main_bank or '',
+        company.industry or '',
+        company.business_content or '',
+        company.main_business or '',
+        company.business_area or '',
+        company.group_affiliation or '',
+        company.sales_destination or '',
+        company.supplier or '',
+        company.office_count or '',
+        company.store_count or '',
+        company.company_overview_url or '',
+        company.office_list_url or '',
+        company.organization_chart_url or '',
+        company.related_companies_url or '',
+        executives_str,
+        offices_str,
+        company.updated_at.strftime('%Y-%m-%d %H:%M:%S') if company.updated_at else ''
+    ])
+    
+    return response
+
+@login_required
 def scraping_history(request):
     """View for scraping execution history"""
     executions = ExecutionHistory.objects.all()

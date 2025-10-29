@@ -76,7 +76,10 @@
                 <span id="scrapingBtnText">Start Scraping</span>
             </button>
             <a href="{% url 'export_companies' %}" class="btn btn-success" download>
-                <i class="fas fa-download"></i> Export CSV
+                <i class="fas fa-download"></i> Export CSV (Simple)
+            </a>
+            <a href="{% url 'export_companies_detailed' %}" class="btn btn-success" download>
+                <i class="fas fa-file-excel"></i> Export CSV (Detailed)
             </a>
             <a href="{% url 'company_list' %}" class="btn btn-primary">
                 <i class="fas fa-eye"></i> View All Companies

@@ -124,7 +124,7 @@
 </style>
 
 <div class="card">
-    <div class="card-header" style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); color: white; border: none;">
+    <div class="card-header" style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); color: white; border: none; display: flex; justify-content: space-between; align-items: center;">
         <div>
             <h2 style="margin: 0; color: white; display: flex; align-items: center; gap: 0.5rem;">
                 <i class="fas fa-building"></i> {{ company.company_name }}
@@ -133,6 +133,14 @@
                 <i class="fas fa-hashtag"></i> Corporate Number: <code style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: white; font-weight: 600;">{{ company.corporate_number }}</code>
             </p>
         </div>
+        <a href="{% url 'export_single_company_detailed' company.id %}" 
+           class="btn" 
+           id="exportDetailedBtn"
+           style="background: white; color: #0891b2; font-weight: 600; padding: 0.5rem 1rem; font-size: 0.875rem; white-space: nowrap; transition: all 0.2s;" 
+           onclick="handleExportClick(event)">
+            <i class="fas fa-file-download" id="exportIcon"></i> 
+            <span id="exportText">Export Detailed</span>
+        </a>
     </div>
     <div class="card-body" style="padding: 1.5rem;">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
@@ -333,4 +341,48 @@
         {% endfor %}
     </div>
 </div>
+
+<script>
+function handleExportClick(event) {
+    event.preventDefault();
+    
+    const btn = document.getElementById('exportDetailedBtn');
+    const icon = document.getElementById('exportIcon');
+    const text = document.getElementById('exportText');
+    
+    // Prevent multiple clicks
+    if (btn.classList.contains('disabled')) {
+        return;
+    }
+    
+    // Show loading state
+    btn.classList.add('disabled');
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    icon.className = 'fas fa-spinner fa-spin';
+    text.textContent = 'Downloading...';
+    
+    // Create a temporary link to trigger download
+    const link = document.createElement('a');
+    link.href = btn.href;
+    link.download = 'company_detail_{{ company.corporate_number }}.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Reset button after delay
+    setTimeout(() => {
+        btn.classList.remove('disabled');
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        icon.className = 'fas fa-check';
+        text.textContent = 'Downloaded!';
+        
+        setTimeout(() => {
+            icon.className = 'fas fa-file-download';
+            text.textContent = 'Export Detailed';
+        }, 2000);
+    }, 1000);
+}
+</script>
 {% endblock %}

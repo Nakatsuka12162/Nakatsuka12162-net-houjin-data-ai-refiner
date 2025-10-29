@@ -4,9 +4,24 @@
 <div class="card">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
         <h2><i class="fas fa-building"></i> Companies ({{ companies.paginator.count }})</h2>
-        <a href="{% url 'export_companies' %}" class="btn btn-success" style="font-size: 0.8125rem; padding: 0.4rem 0.8rem;" download>
-            <i class="fas fa-download"></i> Export
-        </a>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'export_companies' %}" 
+               class="btn btn-success export-btn" 
+               id="exportSimpleBtn"
+               style="font-size: 0.8125rem; padding: 0.4rem 0.8rem;" 
+               onclick="handleExportClick(event, 'exportSimpleBtn', 'exportSimpleIcon', 'exportSimpleText')">
+                <i class="fas fa-download" id="exportSimpleIcon"></i> 
+                <span id="exportSimpleText">Export (Simple)</span>
+            </a>
+            <a href="{% url 'export_companies_detailed' %}" 
+               class="btn btn-success export-btn" 
+               id="exportDetailedBtn"
+               style="font-size: 0.8125rem; padding: 0.4rem 0.8rem;" 
+               onclick="handleExportClick(event, 'exportDetailedBtn', 'exportDetailedIcon', 'exportDetailedText')">
+                <i class="fas fa-file-excel" id="exportDetailedIcon"></i> 
+                <span id="exportDetailedText">Export (Detailed)</span>
+            </a>
+        </div>
     </div>
     <div class="card-body">
         <form method="get" class="search-bar" data-no-loading>
@@ -88,4 +103,50 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+function handleExportClick(event, btnId, iconId, textId) {
+    event.preventDefault();
+    
+    const btn = document.getElementById(btnId);
+    const icon = document.getElementById(iconId);
+    const text = document.getElementById(textId);
+    
+    // Prevent multiple clicks
+    if (btn.classList.contains('disabled')) {
+        return;
+    }
+    
+    // Show loading state
+    btn.classList.add('disabled');
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    const originalIcon = icon.className;
+    icon.className = 'fas fa-spinner fa-spin';
+    const originalText = text.textContent;
+    text.textContent = 'Downloading...';
+    
+    // Create a temporary link to trigger download
+    const link = document.createElement('a');
+    link.href = btn.href;
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Reset button after delay
+    setTimeout(() => {
+        btn.classList.remove('disabled');
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        icon.className = 'fas fa-check';
+        text.textContent = 'Downloaded!';
+        
+        setTimeout(() => {
+            icon.className = originalIcon;
+            text.textContent = originalText;
+        }, 2000);
+    }, 1000);
+}
+</script>
 {% endblock %}
