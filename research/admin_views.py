@@ -149,29 +149,22 @@ def history_list(request):
 
 @login_required
 def export_companies_csv(request):
-    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')  # UTF-8 with BOM
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = 'attachment; filename="companies.csv"'
     
     writer = csv.writer(response)
-    writer.writerow([
-        'Corporate Number', 'Company Name', 'Representative', 'Industry', 'Employees', 'Revenue', 'Address',
-        'Phone', 'Established', 'Capital', 'Business Content', 'Updated'
-    ])
+    # Header row matching the required format: 企業法人番号, 正式企業名, 所在地, URL
+    writer.writerow(['企業法人番号', '正式企業名', '所在地', 'URL'])
     
-    for company in Company.objects.all():
+    for company in Company.objects.all().order_by('id'):
+        # Use company_overview_url if available, otherwise fallback to url
+        url = company.company_overview_url or company.url or ''
+        
         writer.writerow([
-            f"'{company.corporate_number}" if company.corporate_number else '',  # Add quote to force text
+            company.corporate_number or '',
             company.company_name or '',
-            company.representative_name or '',
-            company.industry or '',
-            company.employee_count or '',
-            company.revenue or '',
             company.address or '',
-            company.phone or '',
-            company.established or '',
-            company.capital or '',
-            company.business_content or '',
-            company.updated_at.strftime('%Y-%m-%d %H:%M:%S') if company.updated_at else ''
+            url
         ])
     
     return response
@@ -187,25 +180,34 @@ def export_companies_excel(request):
         ws = wb.active
         ws.title = "Companies"
         
-        # Headers
-        headers = ['Corporate Number', 'Company Name', 'Representative', 'Industry', 'Employees', 'Revenue', 'Address', 'Phone', 'Updated']
+        # Headers matching CSV format: 企業法人番号, 正式企業名, 所在地, URL
+        headers = ['企業法人番号', '正式企業名', '所在地', 'URL']
         for col, header in enumerate(headers, 1):
             ws.cell(row=1, column=col, value=header)
         
         # Data
-        for row, company in enumerate(Company.objects.all(), 2):
+        for row, company in enumerate(Company.objects.all().order_by('id'), 2):
+            # Use company_overview_url if available, otherwise fallback to url
+            url = company.company_overview_url or company.url or ''
+            
             # Format corporate number as text to prevent scientific notation
             corp_cell = ws.cell(row=row, column=1, value=company.corporate_number or '')
             corp_cell.number_format = '@'  # Text format
             
             ws.cell(row=row, column=2, value=company.company_name or '')
-            ws.cell(row=row, column=3, value=company.representative_name or '')
-            ws.cell(row=row, column=4, value=company.industry or '')
-            ws.cell(row=row, column=5, value=company.employee_count or '')
-            ws.cell(row=row, column=6, value=company.revenue or '')
-            ws.cell(row=row, column=7, value=company.address or '')
-            ws.cell(row=row, column=8, value=company.phone or '')
-            ws.cell(row=row, column=9, value=company.updated_at.strftime('%Y-%m-%d %H:%M:%S') if company.updated_at else '')
+            ws.cell(row=row, column=3, value=company.address or '')
+            ws.cell(row=row, column=4, value=url)
+        
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="companies.xlsx"'
+        return response
         
         output = BytesIO()
         wb.save(output)
