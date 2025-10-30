@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Company, Executive, Office, ResearchHistory, ExecutionHistory
 import csv
 import threading
+import json
 from django.utils import timezone
 
 def admin_login(request):
@@ -87,6 +88,61 @@ def company_detail(request, pk):
         'offices': offices,
         'history': history,
     })
+
+@login_required
+def delete_company(request, pk):
+    """Delete company from database and Google Sheets"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST method allowed'}, status=405)
+    
+    try:
+        company = get_object_or_404(Company, pk=pk)
+        corporate_number = company.corporate_number
+        company_name = company.company_name
+        
+        # Delete from Google Sheets first
+        try:
+            import gspread
+            from oauth2client.service_account import ServiceAccountCredentials
+            import os
+            
+            # Google Sheets authentication
+            scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+            creds_path = os.path.join(os.path.dirname(__file__), '..', 'credentials.json')
+            
+            if os.path.exists(creds_path):
+                creds = ServiceAccountCredentials.from_json_keyfile_name(creds_path, scope)
+                client = gspread.authorize(creds)
+                
+                # Open the spreadsheet
+                spreadsheet_id = os.getenv('SPREADSHEET_ID', '1vfBx_vbWQHLsFaI4HTdj5iB0LH8jW4qTlFOdHacxjug')
+                spreadsheet = client.open_by_key(spreadsheet_id)
+                worksheet = spreadsheet.worksheet('会社リスト')
+                
+                # Find and delete the row with this corporate number
+                try:
+                    cell = worksheet.find(corporate_number)
+                    if cell:
+                        worksheet.delete_rows(cell.row)
+                except Exception as sheet_error:
+                    print(f"Error deleting from Google Sheets: {sheet_error}")
+        except Exception as e:
+            print(f"Google Sheets deletion failed: {e}")
+            # Continue with database deletion even if Sheets deletion fails
+        
+        # Delete from database (will cascade delete executives and offices)
+        company.delete()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Successfully deleted {company_name} (Corporate Number: {corporate_number}) from database and Google Sheets'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error deleting company: {str(e)}'
+        }, status=500)
 
 @login_required
 def executive_list(request):

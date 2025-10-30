@@ -8,6 +8,7 @@ urlpatterns = [
     
     path('companies/', admin_views.company_list, name='company_list'),
     path('companies/<int:pk>/', admin_views.company_detail, name='company_detail'),
+    path('companies/<int:pk>/delete/', admin_views.delete_company, name='delete_company'),
     
     path('executives/', admin_views.executive_list, name='executive_list'),
     path('offices/', admin_views.office_list, name='office_list'),
