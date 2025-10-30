@@ -281,110 +281,409 @@ def export_companies_excel(request):
 
 @login_required
 def export_companies_detailed_csv(request):
-    """Export detailed company information including executives and offices"""
-    response = HttpResponse(content_type='text/csv; charset=utf-8')
-    response['Content-Disposition'] = 'attachment; filename="companies_detailed.csv"'
+    """Export detailed company information in Excel format with one sheet per company"""
+    try:
+        import openpyxl
+        from io import BytesIO
+        
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)  # Remove default sheet
+        
+        companies = Company.objects.all().order_by('id')
+        
+        for company in companies:
+            # Get related executives and offices
+            executives = company.executives.all().order_by('order')
+            offices = company.offices.all().order_by('order')
+            
+            # Create sheet name from company name (max 31 chars, no invalid chars)
+            sheet_name = (company.company_name or f'Company {company.id}')[:31]
+            sheet_name = sheet_name.replace('/', '-').replace('\\', '-').replace('*', '').replace('?', '').replace('[', '').replace(']', '')
+            ws = wb.create_sheet(title=sheet_name)
+            
+            row = 1
+            
+            # ◆ I. 基本法人情報（識別・概要）
+            ws.cell(row=row, column=1, value='◆ I. 基本法人情報（識別・概要）')
+            ws.cell(row=row, column=2, value='法人番号')
+            ws.cell(row=row, column=3, value=company.corporate_number or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='会社名')
+            ws.cell(row=row, column=3, value=company.company_name or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='会社名かな')
+            ws.cell(row=row, column=3, value=company.company_name_kana or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='英文企業名')
+            ws.cell(row=row, column=3, value=company.english_name or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='代表者名')
+            ws.cell(row=row, column=3, value=company.representative_name or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='代表者かな')
+            ws.cell(row=row, column=3, value=company.representative_kana or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='代表者年齢')
+            ws.cell(row=row, column=3, value=company.representative_age or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='代表者生年月日')
+            ws.cell(row=row, column=3, value=company.representative_birth or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='代表者出身大学')
+            ws.cell(row=row, column=3, value=company.representative_university or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='郵便番号')
+            ws.cell(row=row, column=3, value=company.postal_code or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='住所')
+            ws.cell(row=row, column=3, value=company.address or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='電話番号')
+            ws.cell(row=row, column=3, value=company.phone or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='登記住所')
+            ws.cell(row=row, column=3, value=company.registered_address or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='FAX番号')
+            ws.cell(row=row, column=3, value=company.fax or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='URL')
+            ws.cell(row=row, column=3, value=company.url or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='創業')
+            ws.cell(row=row, column=3, value=company.founded or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='設立')
+            ws.cell(row=row, column=3, value=company.established or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='資本金')
+            ws.cell(row=row, column=3, value=company.capital or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='出資金')
+            ws.cell(row=row, column=3, value=company.investment or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='会員数')
+            ws.cell(row=row, column=3, value=company.member_count or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='組合員数')
+            ws.cell(row=row, column=3, value=company.union_member_count or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='上場市場')
+            ws.cell(row=row, column=3, value=company.stock_market or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='証券コード')
+            ws.cell(row=row, column=3, value=company.stock_code or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='決算期')
+            ws.cell(row=row, column=3, value=company.fiscal_year_end or '')
+            row += 1
+            
+            # ◆ II. 経営・財務情報
+            ws.cell(row=row, column=1, value='◆ II. 経営・財務情報')
+            ws.cell(row=row, column=2, value='売上高')
+            ws.cell(row=row, column=3, value=company.revenue or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='純利益')
+            ws.cell(row=row, column=3, value=company.net_profit or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='預金量')
+            ws.cell(row=row, column=3, value=company.deposits or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='従業員数')
+            ws.cell(row=row, column=3, value=company.employee_count or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='平均年齢')
+            ws.cell(row=row, column=3, value=company.average_age or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='平均年収')
+            ws.cell(row=row, column=3, value=company.average_salary or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='役員数')
+            ws.cell(row=row, column=3, value=company.executive_count or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='株主数')
+            ws.cell(row=row, column=3, value=company.shareholder_count or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='取引銀行')
+            ws.cell(row=row, column=3, value=company.main_bank or '')
+            row += 1
+            
+            # ◆ III. 事業・業務内容
+            ws.cell(row=row, column=1, value='◆ III. 事業・業務内容')
+            ws.cell(row=row, column=2, value='業種')
+            ws.cell(row=row, column=3, value=company.industry or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='事業内容')
+            ws.cell(row=row, column=3, value=company.business_content or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='主要事業')
+            ws.cell(row=row, column=3, value=company.main_business or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='事業エリア')
+            ws.cell(row=row, column=3, value=company.business_area or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='系列')
+            ws.cell(row=row, column=3, value=company.group_affiliation or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='販売先')
+            ws.cell(row=row, column=3, value=company.sales_destination or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='仕入先')
+            ws.cell(row=row, column=3, value=company.supplier or '')
+            row += 1
+            
+            # ◆ IV. 役員名簿
+            ws.cell(row=row, column=1, value='◆ IV. 役員名簿')
+            ws.cell(row=row, column=2, value='役職名1')
+            ws.cell(row=row, column=3, value=executives[0].position if len(executives) > 0 else '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='役員名1')
+            ws.cell(row=row, column=3, value=executives[0].name if len(executives) > 0 else '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='ふりがな1')
+            ws.cell(row=row, column=3, value=executives[0].name_kana if len(executives) > 0 else '')
+            row += 1
+            
+            for i in range(1, 15):  # 2 to 15
+                if i < len(executives):
+                    ws.cell(row=row, column=2, value=f'役職名{i+1}')
+                    ws.cell(row=row, column=3, value=executives[i].position or '')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'役員名{i+1}')
+                    ws.cell(row=row, column=3, value=executives[i].name or '')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'ふりがな{i+1}')
+                    ws.cell(row=row, column=3, value=executives[i].name_kana or '')
+                    row += 1
+                else:
+                    ws.cell(row=row, column=2, value=f'役職名{i+1}')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'役員名{i+1}')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'ふりがな{i+1}')
+                    row += 1
+            
+            # ◆ VI. 拠点・展開規模
+            ws.cell(row=row, column=1, value='◆ VI. 拠点・展開規模')
+            ws.cell(row=row, column=2, value='事業所数')
+            ws.cell(row=row, column=3, value=company.office_count or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='店舗数')
+            ws.cell(row=row, column=3, value=company.store_count or '')
+            row += 1
+            
+            # ◆ VII. 拠点・事業所一覧
+            for i in range(15):  # 1 to 15
+                if i < len(offices):
+                    if i == 0:
+                        ws.cell(row=row, column=1, value='◆ VII. 拠点・事業所一覧')
+                    ws.cell(row=row, column=2, value=f'事業所名{i+1}')
+                    ws.cell(row=row, column=3, value=offices[i].name or '')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'郵便番号{i+1}')
+                    ws.cell(row=row, column=3, value=offices[i].postal_code or '')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'住所{i+1}')
+                    ws.cell(row=row, column=3, value=offices[i].address or '')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'電話番号{i+1}')
+                    ws.cell(row=row, column=3, value=offices[i].phone or '')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'扱い品目・業務内容{i+1}')
+                    ws.cell(row=row, column=3, value=offices[i].business_content or '')
+                    row += 1
+                else:
+                    if i == 0:
+                        ws.cell(row=row, column=1, value='◆ VII. 拠点・事業所一覧')
+                    ws.cell(row=row, column=2, value=f'事業所名{i+1}')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'郵便番号{i+1}')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'住所{i+1}')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'電話番号{i+1}')
+                    row += 1
+                    ws.cell(row=row, column=2, value=f'扱い品目・業務内容{i+1}')
+                    row += 1
+            
+            # ◆ VII. URL
+            ws.cell(row=row, column=1, value='◆ VII. URL')
+            ws.cell(row=row, column=2, value='会社概要ページURL')
+            ws.cell(row=row, column=3, value=company.company_overview_url or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='拠点・事業所ページURL')
+            ws.cell(row=row, column=3, value=company.office_list_url or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='組織図ページURL')
+            ws.cell(row=row, column=3, value=company.organization_chart_url or '')
+            row += 1
+            
+            ws.cell(row=row, column=2, value='関係会社ページURL')
+            ws.cell(row=row, column=3, value=company.related_companies_url or '')
+        
+        # Save to BytesIO
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="companies_detailed.xlsx"'
+        return response
+        
+    except ImportError:
+        # Fallback to CSV if openpyxl not available
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="companies_detailed.csv"'
+        
+        writer = csv.writer(response)
     
-    writer = csv.writer(response)
+    companies = Company.objects.all().order_by('id')
     
-    # Comprehensive header with all fields
-    writer.writerow([
-        '企業法人番号', '会社名', '会社名かな', '英文企業名',
-        '代表者名', '代表者かな', '代表者年齢', '代表者生年月日', '代表者出身大学',
-        '郵便番号', '住所', '電話番号', '登記住所', 'FAX番号', 'URL',
-        '創業', '設立', '資本金', '出資金', '会員数', '組合員数',
-        '上場市場', '証券コード', '決算期',
-        '売上高', '純利益', '預金量', '従業員数', '平均年齢', '平均年収',
-        '役員数', '株主数', '取引銀行',
-        '業種', '事業内容', '主要事業', '事業エリア', '系列', '販売先', '仕入先',
-        '事業所数', '店舗数',
-        '会社概要URL', '拠点・事業所URL', '組織図URL', '関係会社URL',
-        '役員名簿', '拠点一覧',
-        '更新日時'
-    ])
-    
-    for company in Company.objects.all().order_by('id'):
-        # Get executives (up to 14)
+    for idx, company in enumerate(companies):
+        # Get related executives and offices
         executives = company.executives.all().order_by('order')
-        exec_list = []
-        for exec in executives:
-            exec_info = f"{exec.position}: {exec.name}"
-            if exec.name_kana:
-                exec_info += f" ({exec.name_kana})"
-            exec_list.append(exec_info)
-        executives_str = '; '.join(exec_list) if exec_list else ''
-        
-        # Get offices (up to 14)
         offices = company.offices.all().order_by('order')
-        office_list = []
-        for office in offices:
-            office_info = f"{office.name}"
-            if office.address:
-                office_info += f" - {office.address}"
-            if office.phone:
-                office_info += f" (TEL: {office.phone})"
-            if office.business_content:
-                office_info += f" [{office.business_content}]"
-            office_list.append(office_info)
-        offices_str = '; '.join(office_list) if office_list else ''
         
-        writer.writerow([
-            company.corporate_number or '',
-            company.company_name or '',
-            company.company_name_kana or '',
-            company.english_name or '',
-            company.representative_name or '',
-            company.representative_kana or '',
-            company.representative_age or '',
-            company.representative_birth or '',
-            company.representative_university or '',
-            company.postal_code or '',
-            company.address or '',
-            company.phone or '',
-            company.registered_address or '',
-            company.fax or '',
-            company.url or '',
-            company.founded or '',
-            company.established or '',
-            company.capital or '',
-            company.investment or '',
-            company.member_count or '',
-            company.union_member_count or '',
-            company.stock_market or '',
-            company.stock_code or '',
-            company.fiscal_year_end or '',
-            company.revenue or '',
-            company.net_profit or '',
-            company.deposits or '',
-            company.employee_count or '',
-            company.average_age or '',
-            company.average_salary or '',
-            company.executive_count or '',
-            company.shareholder_count or '',
-            company.main_bank or '',
-            company.industry or '',
-            company.business_content or '',
-            company.main_business or '',
-            company.business_area or '',
-            company.group_affiliation or '',
-            company.sales_destination or '',
-            company.supplier or '',
-            company.office_count or '',
-            company.store_count or '',
-            company.company_overview_url or '',
-            company.office_list_url or '',
-            company.organization_chart_url or '',
-            company.related_companies_url or '',
-            executives_str,
-            offices_str,
-            company.updated_at.strftime('%Y-%m-%d %H:%M:%S') if company.updated_at else ''
-        ])
+        # ◆ I. 基本法人情報（識別・概要）
+        writer.writerow(['◆ I. 基本法人情報（識別・概要）', '法人番号', company.corporate_number or ''])
+        writer.writerow(['', '会社名', company.company_name or ''])
+        writer.writerow(['', '会社名かな', company.company_name_kana or ''])
+        writer.writerow(['', '英文企業名', company.english_name or ''])
+        writer.writerow(['', '代表者名', company.representative_name or ''])
+        writer.writerow(['', '代表者かな', company.representative_kana or ''])
+        writer.writerow(['', '代表者年齢', company.representative_age or ''])
+        writer.writerow(['', '代表者生年月日', company.representative_birth or ''])
+        writer.writerow(['', '代表者出身大学', company.representative_university or ''])
+        writer.writerow(['', '郵便番号', company.postal_code or ''])
+        writer.writerow(['', '住所', company.address or ''])
+        writer.writerow(['', '電話番号', company.phone or ''])
+        writer.writerow(['', '登記住所', company.registered_address or ''])
+        writer.writerow(['', 'FAX番号', company.fax or ''])
+        writer.writerow(['', 'URL', company.url or ''])
+        writer.writerow(['', '創業', company.founded or ''])
+        writer.writerow(['', '設立', company.established or ''])
+        writer.writerow(['', '資本金', company.capital or ''])
+        writer.writerow(['', '出資金', company.investment or ''])
+        writer.writerow(['', '会員数', company.member_count or ''])
+        writer.writerow(['', '組合員数', company.union_member_count or ''])
+        writer.writerow(['', '上場市場', company.stock_market or ''])
+        writer.writerow(['', '証券コード', company.stock_code or ''])
+        writer.writerow(['', '決算期', company.fiscal_year_end or ''])
+        
+        # ◆ II. 経営・財務情報
+        writer.writerow(['◆ II. 経営・財務情報', '売上高', company.revenue or ''])
+        writer.writerow(['', '純利益', company.net_profit or ''])
+        writer.writerow(['', '預金量', company.deposits or ''])
+        writer.writerow(['', '従業員数', company.employee_count or ''])
+        writer.writerow(['', '平均年齢', company.average_age or ''])
+        writer.writerow(['', '平均年収', company.average_salary or ''])
+        writer.writerow(['', '役員数', company.executive_count or ''])
+        writer.writerow(['', '株主数', company.shareholder_count or ''])
+        writer.writerow(['', '取引銀行', company.main_bank or ''])
+        
+        # ◆ III. 事業・業務内容
+        writer.writerow(['◆ III. 事業・業務内容', '業種', company.industry or ''])
+        writer.writerow(['', '事業内容', company.business_content or ''])
+        writer.writerow(['', '主要事業', company.main_business or ''])
+        writer.writerow(['', '事業エリア', company.business_area or ''])
+        writer.writerow(['', '系列', company.group_affiliation or ''])
+        writer.writerow(['', '販売先', company.sales_destination or ''])
+        writer.writerow(['', '仕入先', company.supplier or ''])
+        
+        # ◆ IV. 役員名簿
+        writer.writerow(['◆ IV. 役員名簿', '役職名1', executives[0].position if len(executives) > 0 else ''])
+        writer.writerow(['', '役員名1', executives[0].name if len(executives) > 0 else ''])
+        writer.writerow(['', 'ふりがな1', executives[0].name_kana if len(executives) > 0 else ''])
+        
+        for i in range(1, 15):  # 2 to 15
+            if i < len(executives):
+                writer.writerow(['', f'役職名{i+1}', executives[i].position or ''])
+                writer.writerow(['', f'役員名{i+1}', executives[i].name or ''])
+                writer.writerow(['', f'ふりがな{i+1}', executives[i].name_kana or ''])
+            else:
+                writer.writerow(['', f'役職名{i+1}', ''])
+                writer.writerow(['', f'役員名{i+1}', ''])
+                writer.writerow(['', f'ふりがな{i+1}', ''])
+        
+        # ◆ VI. 拠点・展開規模
+        writer.writerow(['◆ VI. 拠点・展開規模', '事業所数', company.office_count or ''])
+        writer.writerow(['', '店舗数', company.store_count or ''])
+        
+        # ◆ VII. 拠点・事業所一覧
+        for i in range(15):  # 1 to 15
+            if i < len(offices):
+                writer.writerow(['◆ VII. 拠点・事業所一覧' if i == 0 else '', f'事業所名{i+1}', offices[i].name or ''])
+                writer.writerow(['', f'郵便番号{i+1}', offices[i].postal_code or ''])
+                writer.writerow(['', f'住所{i+1}', offices[i].address or ''])
+                writer.writerow(['', f'電話番号{i+1}', offices[i].phone or ''])
+                writer.writerow(['', f'扱い品目・業務内容{i+1}', offices[i].business_content or ''])
+            else:
+                writer.writerow(['◆ VII. 拠点・事業所一覧' if i == 0 else '', f'事業所名{i+1}', ''])
+                writer.writerow(['', f'郵便番号{i+1}', ''])
+                writer.writerow(['', f'住所{i+1}', ''])
+                writer.writerow(['', f'電話番号{i+1}', ''])
+                writer.writerow(['', f'扱い品目・業務内容{i+1}', ''])
+        
+        # ◆ VII. URL
+        writer.writerow(['◆ VII. URL', '会社概要ページURL', company.company_overview_url or ''])
+        writer.writerow(['', '拠点・事業所ページURL', company.office_list_url or ''])
+        writer.writerow(['', '組織図ページURL', company.organization_chart_url or ''])
+        writer.writerow(['', '関係会社ページURL', company.related_companies_url or ''])
+        
+        # Add separator between companies (empty row)
+        if idx < len(companies) - 1:  # Don't add separator after last company
+            writer.writerow([])
     
     return response
 
 @login_required
 def export_single_company_detailed_csv(request, company_id):
-    """Export detailed information for a single company as CSV"""
+    """Export single company detailed CSV file in structured Japanese format"""
     company = get_object_or_404(Company, pk=company_id)
     
     response = HttpResponse(content_type='text/csv; charset=utf-8')
@@ -392,94 +691,95 @@ def export_single_company_detailed_csv(request, company_id):
     
     writer = csv.writer(response)
     
-    # Write headers matching the actual Company model fields
-    writer.writerow([
-        '企業法人番号', '会社名', '会社名かな', '英文企業名',
-        '代表者名', '代表者かな', '代表者年齢', '代表者生年月日', '代表者出身大学',
-        '郵便番号', '住所', '電話番号', '登記住所', 'FAX番号', 'URL',
-        '創業', '設立', '資本金', '出資金', '会員数', '組合員数',
-        '上場市場', '証券コード', '決算期',
-        '売上高', '純利益', '預金量', '従業員数', '平均年齢', '平均年収',
-        '役員数', '株主数', '取引銀行',
-        '業種', '事業内容', '主要事業', '事業エリア', '系列', '販売先', '仕入先',
-        '事業所数', '店舗数',
-        '会社概要URL', '拠点・事業所URL', '組織図URL', '関係会社URL',
-        '役員名簿', '拠点一覧',
-        '更新日時'
-    ])
-    
     # Get related executives and offices
     executives = company.executives.all().order_by('order')
-    executives_str = '; '.join([
-        f"{exec.position}: {exec.name}" + (f" ({exec.name_kana})" if exec.name_kana else "")
-        for exec in executives
-    ])
-    
     offices = company.offices.all().order_by('order')
-    offices_list = []
-    for office in offices:
-        office_info = office.name or ''
-        if office.address:
-            office_info += f" - {office.address}"
-        if office.phone:
-            office_info += f" (TEL: {office.phone})"
-        if office.business_content:
-            office_info += f" [{office.business_content}]"
-        offices_list.append(office_info)
-    offices_str = '; '.join(offices_list)
     
-    # Write single company data using actual model fields
-    writer.writerow([
-        company.corporate_number or '',
-        company.company_name or '',
-        company.company_name_kana or '',
-        company.english_name or '',
-        company.representative_name or '',
-        company.representative_kana or '',
-        company.representative_age or '',
-        company.representative_birth or '',
-        company.representative_university or '',
-        company.postal_code or '',
-        company.address or '',
-        company.phone or '',
-        company.registered_address or '',
-        company.fax or '',
-        company.url or '',
-        company.founded or '',
-        company.established or '',
-        company.capital or '',
-        company.investment or '',
-        company.member_count or '',
-        company.union_member_count or '',
-        company.stock_market or '',
-        company.stock_code or '',
-        company.fiscal_year_end or '',
-        company.revenue or '',
-        company.net_profit or '',
-        company.deposits or '',
-        company.employee_count or '',
-        company.average_age or '',
-        company.average_salary or '',
-        company.executive_count or '',
-        company.shareholder_count or '',
-        company.main_bank or '',
-        company.industry or '',
-        company.business_content or '',
-        company.main_business or '',
-        company.business_area or '',
-        company.group_affiliation or '',
-        company.sales_destination or '',
-        company.supplier or '',
-        company.office_count or '',
-        company.store_count or '',
-        company.company_overview_url or '',
-        company.office_list_url or '',
-        company.organization_chart_url or '',
-        company.related_companies_url or '',
-        executives_str,
-        offices_str,
-        company.updated_at.strftime('%Y-%m-%d %H:%M:%S') if company.updated_at else ''
-    ])
+    # ◆ I. 基本法人情報（識別・概要）
+    writer.writerow(['◆ I. 基本法人情報（識別・概要）', '法人番号', company.corporate_number or ''])
+    writer.writerow(['', '会社名', company.company_name or ''])
+    writer.writerow(['', '会社名かな', company.company_name_kana or ''])
+    writer.writerow(['', '英文企業名', company.english_name or ''])
+    writer.writerow(['', '代表者名', company.representative_name or ''])
+    writer.writerow(['', '代表者かな', company.representative_kana or ''])
+    writer.writerow(['', '代表者年齢', company.representative_age or ''])
+    writer.writerow(['', '代表者生年月日', company.representative_birth or ''])
+    writer.writerow(['', '代表者出身大学', company.representative_university or ''])
+    writer.writerow(['', '郵便番号', company.postal_code or ''])
+    writer.writerow(['', '住所', company.address or ''])
+    writer.writerow(['', '電話番号', company.phone or ''])
+    writer.writerow(['', '登記住所', company.registered_address or ''])
+    writer.writerow(['', 'FAX番号', company.fax or ''])
+    writer.writerow(['', 'URL', company.url or ''])
+    writer.writerow(['', '創業', company.founded or ''])
+    writer.writerow(['', '設立', company.established or ''])
+    writer.writerow(['', '資本金', company.capital or ''])
+    writer.writerow(['', '出資金', company.investment or ''])
+    writer.writerow(['', '会員数', company.member_count or ''])
+    writer.writerow(['', '組合員数', company.union_member_count or ''])
+    writer.writerow(['', '上場市場', company.stock_market or ''])
+    writer.writerow(['', '証券コード', company.stock_code or ''])
+    writer.writerow(['', '決算期', company.fiscal_year_end or ''])
+    
+    # ◆ II. 経営・財務情報
+    writer.writerow(['◆ II. 経営・財務情報', '売上高', company.revenue or ''])
+    writer.writerow(['', '純利益', company.net_profit or ''])
+    writer.writerow(['', '預金量', company.deposits or ''])
+    writer.writerow(['', '従業員数', company.employee_count or ''])
+    writer.writerow(['', '平均年齢', company.average_age or ''])
+    writer.writerow(['', '平均年収', company.average_salary or ''])
+    writer.writerow(['', '役員数', company.executive_count or ''])
+    writer.writerow(['', '株主数', company.shareholder_count or ''])
+    writer.writerow(['', '取引銀行', company.main_bank or ''])
+    
+    # ◆ III. 事業・業務内容
+    writer.writerow(['◆ III. 事業・業務内容', '業種', company.industry or ''])
+    writer.writerow(['', '事業内容', company.business_content or ''])
+    writer.writerow(['', '主要事業', company.main_business or ''])
+    writer.writerow(['', '事業エリア', company.business_area or ''])
+    writer.writerow(['', '系列', company.group_affiliation or ''])
+    writer.writerow(['', '販売先', company.sales_destination or ''])
+    writer.writerow(['', '仕入先', company.supplier or ''])
+    
+    # ◆ IV. 役員名簿
+    writer.writerow(['◆ IV. 役員名簿', '役職名1', executives[0].position if len(executives) > 0 else ''])
+    writer.writerow(['', '役員名1', executives[0].name if len(executives) > 0 else ''])
+    writer.writerow(['', 'ふりがな1', executives[0].name_kana if len(executives) > 0 else ''])
+    
+    for i in range(1, 15):  # 2 to 15
+        if i < len(executives):
+            writer.writerow(['', f'役職名{i+1}', executives[i].position or ''])
+            writer.writerow(['', f'役員名{i+1}', executives[i].name or ''])
+            writer.writerow(['', f'ふりがな{i+1}', executives[i].name_kana or ''])
+        else:
+            writer.writerow(['', f'役職名{i+1}', ''])
+            writer.writerow(['', f'役員名{i+1}', ''])
+            writer.writerow(['', f'ふりがな{i+1}', ''])
+    
+    # ◆ VI. 拠点・展開規模
+    writer.writerow(['◆ VI. 拠点・展開規模', '事業所数', company.office_count or ''])
+    writer.writerow(['', '店舗数', company.store_count or ''])
+    
+    # ◆ VII. 拠点・事業所一覧
+    for i in range(15):  # 1 to 15
+        if i < len(offices):
+            writer.writerow(['◆ VII. 拠点・事業所一覧' if i == 0 else '', f'事業所名{i+1}', offices[i].name or ''])
+            writer.writerow(['', f'郵便番号{i+1}', offices[i].postal_code or ''])
+            writer.writerow(['', f'住所{i+1}', offices[i].address or ''])
+            writer.writerow(['', f'電話番号{i+1}', offices[i].phone or ''])
+            writer.writerow(['', f'扱い品目・業務内容{i+1}', offices[i].business_content or ''])
+        else:
+            writer.writerow(['◆ VII. 拠点・事業所一覧' if i == 0 else '', f'事業所名{i+1}', ''])
+            writer.writerow(['', f'郵便番号{i+1}', ''])
+            writer.writerow(['', f'住所{i+1}', ''])
+            writer.writerow(['', f'電話番号{i+1}', ''])
+            writer.writerow(['', f'扱い品目・業務内容{i+1}', ''])
+    
+    # ◆ VII. URL
+    writer.writerow(['◆ VII. URL', '会社概要ページURL', company.company_overview_url or ''])
+    writer.writerow(['', '拠点・事業所ページURL', company.office_list_url or ''])
+    writer.writerow(['', '組織図ページURL', company.organization_chart_url or ''])
+    writer.writerow(['', '関係会社ページURL', company.related_companies_url or ''])
     
     return response
 
