@@ -55,10 +55,10 @@
     "
   >
     <h2 style="margin: 0">
-      <i class="fas fa-robot"></i> Scraping History ({{ executions.paginator.count }})
+      <i class="fas fa-robot"></i> スクレイピング履歴 ({{ executions.paginator.count }})
     </h2>
     <button onclick="showConfigModal()" class="btn btn-success">
-      <i class="fas fa-play"></i> Start New Scraping
+      <i class="fas fa-play"></i> 新規スクレイピング開始
     </button>
   </div>
   <div class="card-body">
@@ -67,11 +67,11 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>Started</th>
-            <th>Status</th>
-            <th>Progress</th>
-            <th>Duration</th>
-            <th>Config</th>
+            <th>開始日時</th>
+            <th>ステータス</th>
+            <th>進捗</th>
+            <th>実行時間</th>
+            <th>設定</th>
           </tr>
         </thead>
         <tbody>
@@ -137,16 +137,16 @@
                   class="btn btn-secondary"
                   style="font-size: 0.75rem; padding: 0.25rem 0.5rem"
                 >
-                  <i class="fas fa-info-circle"></i> View Details
+                  <i class="fas fa-info-circle"></i> 詳細表示
                 </button>
                 {% if execution.status == 'completed' and execution.processed_companies > 0 %}
                 <a
                   href="{% url 'export_execution_data' execution.id %}"
                   class="btn btn-success"
                   style="font-size: 0.75rem; padding: 0.25rem 0.5rem"
-                  title="Download Excel with all data"
+                  title="すべてのデータを含むExcelをダウンロード"
                 >
-                  <i class="fas fa-download"></i> Export
+                  <i class="fas fa-download"></i> エクスポート
                 </a>
                 {% endif %}
               </div>
@@ -161,7 +161,7 @@
               <div style="font-size: 2rem; margin-bottom: 0.5rem">
                 <i class="fas fa-robot"></i>
               </div>
-              <div>No scraping history found.</div>
+              <div>スクレイピング履歴が見つかりません。</div>
             </td>
           </tr>
           {% endfor %}
@@ -172,9 +172,9 @@
     {% if executions.has_other_pages %}
     <div class="pagination">
       {% if executions.has_previous %}
-      <a href="?page=1" data-no-loading>&laquo; First</a>
+      <a href="?page=1" data-no-loading>&laquo; 最初</a>
       <a href="?page={{ executions.previous_page_number }}" data-no-loading
-        >&lsaquo; Prev</a
+        >&lsaquo; 前へ</a
       >
       {% endif %}
 
@@ -184,10 +184,10 @@
 
       {% if executions.has_next %}
       <a href="?page={{ executions.next_page_number }}" data-no-loading
-        >Next &rsaquo;</a
+        >次へ &rsaquo;</a
       >
       <a href="?page={{ executions.paginator.num_pages }}" data-no-loading
-        >Last &raquo;</a
+        >最後 &raquo;</a
       >
       {% endif %}
     </div>
@@ -199,7 +199,7 @@
 <div class="modal-overlay" id="configModal" onclick="if(event.target === this) hideConfigModal();">
   <div class="modal-content" style="max-width: 550px; display: flex; flex-direction: column; max-height: 90vh;">
     <div class="modal-header" style="flex-shrink: 0;">
-      <h3><i class="fas fa-cog"></i> Configure Scraping</h3>
+      <h3><i class="fas fa-cog"></i> スクレイピング設定</h3>
       <button type="button" class="modal-close" onclick="hideConfigModal()">
         <i class="fas fa-times"></i>
       </button>
@@ -209,36 +209,35 @@
         <div class="form-group">
           <label
             style="display: block; margin-bottom: 0.5rem; font-weight: bold"
-            >Spreadsheet Range:</label
+            >スプレッドシート範囲:</label
           >
           <input
             type="text"
             id="spreadsheetRange"
             value="会社リスト!A3:D"
-            placeholder="e.g., 会社リスト!A3:D50"
+            placeholder="例: 会社リスト!A3:D50"
             class="form-control"
           />
           <small style="color: #666; display: block; margin-top: 0.25rem"
-            >Specify which cells to process (e.g., A3:D50 for first 50
-            companies)</small
+            >処理するセル範囲を指定（例: A3:D50で最初の50社）</small
           >
         </div>
 
         <div class="form-group">
           <label
             style="display: block; margin-bottom: 0.5rem; font-weight: bold"
-            >Max Companies (Optional):</label
+            >最大企業数（オプション）:</label
           >
           <input
             type="number"
             id="maxCompanies"
-            placeholder="e.g., 25"
+            placeholder="例: 25"
             min="1"
             max="1000"
             class="form-control"
           />
           <small style="color: #666; display: block; margin-top: 0.25rem"
-            >Limit processing to X companies (leave empty for no limit)</small
+            >処理をX社に制限（空白で制限なし）</small
           >
         </div>
 
@@ -250,26 +249,26 @@
               checked
               style="margin-right: 0.5rem"
             />
-            <strong>Update Google Sheets</strong>
+            <strong>Googleスプレッドシートを更新</strong>
           </label>
           <small style="color: #666; display: block; margin-left: 1.5rem"
-            >Create individual company sheets (uncheck for database-only)</small
+            >個別企業シートを作成（チェックを外すとデータベースのみ）</small
           >
         </div>
 
         <div class="form-group">
           <label
             style="display: block; margin-bottom: 0.5rem; font-weight: bold"
-            >Description (Optional):</label
+            >説明（オプション）:</label
           >
           <input
             type="text"
             id="description"
-            placeholder="e.g., Q4 2024 company update"
+            placeholder="例: 2024年第4四半期 企業更新"
             class="form-control"
           />
           <small style="color: #666; display: block; margin-top: 0.25rem"
-            >Label this scraping run for tracking</small
+            >このスクレイピング実行にラベルを付ける</small
           >
         </div>
       </form>
@@ -280,14 +279,14 @@
         onclick="hideConfigModal()"
         class="btn btn-secondary"
       >
-        <i class="fas fa-times"></i> Cancel
+        <i class="fas fa-times"></i> キャンセル
       </button>
       <button
         type="button"
         onclick="startConfiguredScraping()"
         class="btn btn-success"
       >
-        <i class="fas fa-play"></i> Start Scraping
+        <i class="fas fa-play"></i> スクレイピング開始
       </button>
     </div>
   </div>
@@ -297,7 +296,7 @@
 <div class="modal-overlay" id="configDetailsModal" onclick="if(event.target === this) hideConfigDetailsModal();">
   <div class="modal-content">
     <div class="modal-header">
-      <h3><i class="fas fa-info-circle"></i> Configuration Details</h3>
+      <h3><i class="fas fa-info-circle"></i> 設定詳細</h3>
       <button
         type="button"
         class="modal-close"
@@ -323,7 +322,7 @@
           "
         >
           <i class="fas fa-hashtag" style="color: #0891b2"></i>
-          <strong>Execution ID:</strong>
+          <strong>実行ID:</strong>
           <code
             id="detailsId"
             style="
@@ -346,7 +345,7 @@
             style="color: #10b981; margin-top: 0.25rem"
           ></i>
           <div>
-            <strong>Spreadsheet Range:</strong>
+            <strong>スプレッドシート範囲:</strong>
             <div
               id="detailsRange"
               style="
@@ -370,7 +369,7 @@
             style="color: #f59e0b; margin-top: 0.25rem"
           ></i>
           <div style="flex: 1">
-            <strong>Description:</strong>
+            <strong>説明:</strong>
             <div
               id="detailsDescription"
               style="color: #374151; margin-top: 0.25rem"
@@ -386,12 +385,12 @@
           "
         >
           <i class="fas fa-building" style="color: #3b82f6"></i>
-          <strong>Max Companies:</strong>
+          <strong>最大企業数:</strong>
           <span id="detailsMaxCompanies"></span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem">
           <i class="fas fa-file-spreadsheet" style="color: #8b5cf6"></i>
-          <strong>Update Google Sheets:</strong>
+          <strong>Googleスプレッドシート更新:</strong>
           <span id="detailsUpdateSheets"></span>
         </div>
       </div>
@@ -412,15 +411,15 @@
 
   function showConfigDetails(id, range, description, maxCompanies, updateSheets) {
       document.getElementById('detailsId').textContent = '#' + id;
-      document.getElementById('detailsRange').textContent = range || 'Not specified';
-      document.getElementById('detailsDescription').textContent = description || 'No description provided';
-      document.getElementById('detailsMaxCompanies').textContent = maxCompanies ? maxCompanies + ' companies' : 'No limit';
+      document.getElementById('detailsRange').textContent = range || '指定なし';
+      document.getElementById('detailsDescription').textContent = description || '説明なし';
+      document.getElementById('detailsMaxCompanies').textContent = maxCompanies ? maxCompanies + ' 社' : '制限なし';
 
       const updateSheetsEl = document.getElementById('detailsUpdateSheets');
       if (updateSheets) {
-          updateSheetsEl.innerHTML = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Enabled</span>';
+          updateSheetsEl.innerHTML = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> 有効</span>';
       } else {
-          updateSheetsEl.innerHTML = '<span style="color: #6b7280;"><i class="fas fa-times-circle"></i> Disabled</span>';
+          updateSheetsEl.innerHTML = '<span style="color: #6b7280;"><i class="fas fa-times-circle"></i> 無効</span>';
       }
 
       document.getElementById('configDetailsModal').classList.add('active');
@@ -465,13 +464,13 @@
                          document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
         if (!csrfToken) {
-            showAlert('CSRF token not found. Please refresh the page.', 'error');
+            showAlert('CSRFトークンが見つかりません。ページを更新してください。', 'error');
             return;
         }
 
         console.log('Starting scraping with config:', config);
         hideConfigModal();
-        showLoading('Starting scraping process');
+        showLoading('スクレイピングプロセスを開始しています');
 
         fetch('/admin/api/scrape/', {
             method: 'POST',
@@ -489,26 +488,26 @@
             console.log('Response data:', data);
             hideLoading();
             if (data.status === 'started') {
-                const configDetails = `Execution ID: #${data.execution_id}
-  Range: ${data.config.range}
-  Update Sheets: ${data.config.update_sheets ? 'Yes' : 'No'}
-  ${data.config.description ? 'Description: ' + data.config.description : ''}
-  ${data.config.max_companies ? 'Max Companies: ' + data.config.max_companies : ''}`;
+                const configDetails = `実行ID: #${data.execution_id}
+  範囲: ${data.config.range}
+  シート更新: ${data.config.update_sheets ? 'はい' : 'いいえ'}
+  ${data.config.description ? '説明: ' + data.config.description : ''}
+  ${data.config.max_companies ? '最大企業数: ' + data.config.max_companies : ''}`;
 
-                showAlert(configDetails, 'success', 'Scraping Started!');
+                showAlert(configDetails, 'success', 'スクレイピング開始！');
                 setTimeout(() => {
                     hideAlert();
-                    showLoading('Refreshing page');
+                    showLoading('ページを更新しています');
                     location.reload();
                 }, 2500);
             } else {
-                showAlert('Error: ' + data.message, 'error');
+                showAlert('エラー: ' + data.message, 'error');
             }
         })
         .catch(error => {
             console.error('Fetch error:', error);
             hideLoading();
-            showAlert('Error starting scraping: ' + error.message, 'error');
+            showAlert('スクレイピング開始エラー: ' + error.message, 'error');
         });
     }
 

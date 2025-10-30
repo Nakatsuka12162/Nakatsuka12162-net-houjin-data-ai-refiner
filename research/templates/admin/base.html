@@ -518,20 +518,20 @@
                 <div class="alert-modal-icon" id="alertIcon">
                     <i class="fas fa-info-circle"></i>
                 </div>
-                <div class="alert-modal-title" id="alertTitle">Alert</div>
+                <div class="alert-modal-title" id="alertTitle">通知</div>
                 <div class="alert-modal-message" id="alertMessage"></div>
             </div>
         </div>
     </div>
 
     <div class="header">
-        <h1><i class="fas fa-building"></i> Company Research System</h1>
+        <h1><i class="fas fa-building"></i> 企業調査システム</h1>
         <div class="nav">
             <a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}>
-                <i class="fas fa-chart-line"></i> Dashboard
+                <i class="fas fa-chart-line"></i> ダッシュボード
             </a>
             <a href="{% url 'company_list' %}" {% if 'company' in request.resolver_match.url_name %}class="active"{% endif %}>
-                <i class="fas fa-building"></i> Companies
+                <i class="fas fa-building"></i> 企業一覧
             </a>
             {% comment %} <a href="{% url 'executive_list' %}" {% if 'executive' in request.resolver_match.url_name %}class="active"{% endif %}>
                 <i class="fas fa-users"></i> Executives
@@ -540,13 +540,13 @@
                 <i class="fas fa-map-marker-alt"></i> Offices
             </a> {% endcomment %}
             <a href="{% url 'history_list' %}" {% if request.resolver_match.url_name == 'history_list' %}class="active"{% endif %}>
-                <i class="fas fa-history"></i> History
+                <i class="fas fa-history"></i> 履歴
             </a>
             <a href="{% url 'scraping_history' %}" {% if request.resolver_match.url_name == 'scraping_history' %}class="active"{% endif %}>
-                <i class="fas fa-robot"></i> Scraping
+                <i class="fas fa-robot"></i> スクレイピング
             </a>            
             <div class="user-menu">
-                <a href="{% url 'admin_logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <a href="{% url 'admin_logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> ログアウト</a>
             </div>
         </div>
     </div>

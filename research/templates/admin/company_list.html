@@ -3,33 +3,33 @@
 {% block content %}
 <div class="card">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <h2><i class="fas fa-building"></i> Companies ({{ companies.paginator.count }})</h2>
+        <h2><i class="fas fa-building"></i> 企業一覧 ({{ companies.paginator.count }})</h2>
         <a href="{% url 'export_companies_detailed' %}" 
            class="btn btn-success export-btn" 
            id="exportDetailedBtn"
            style="font-size: 0.8125rem; padding: 0.4rem 0.8rem;" 
            onclick="handleExportClick(event, 'exportDetailedBtn', 'exportDetailedIcon', 'exportDetailedText')">
             <i class="fas fa-file-excel" id="exportDetailedIcon"></i> 
-            <span id="exportDetailedText">Export (Detailed)</span>
+            <span id="exportDetailedText">詳細エクスポート</span>
         </a>
     </div>
     <div class="card-body">
         <form method="get" class="search-bar" data-no-loading>
-            <input type="text" name="search" placeholder="Search companies..." value="{{ search }}">
-            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+            <input type="text" name="search" placeholder="企業を検索..." value="{{ search }}">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> 検索</button>
         </form>
         
         <div class="table-wrapper">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Company</th>
-                        <th>Corporate Number</th>
-                        <th>Representative</th>
-                        <th>Industry</th>
-                        <th>Employees</th>
-                        <th>Updated</th>
-                        <th style="text-align: center;">Actions</th>
+                        <th>企業名</th>
+                        <th>法人番号</th>
+                        <th>代表者</th>
+                        <th>業種</th>
+                        <th>従業員数</th>
+                        <th>更新日時</th>
+                        <th style="text-align: center;">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -55,10 +55,10 @@
                         <td style="text-align: center;">
                             <div style="display: flex; gap: 0.375rem; justify-content: center; align-items: center;">
                                 <a href="{% url 'company_detail' company.pk %}" class="btn btn-primary" style="padding: 0.25rem 0.625rem; font-size: 0.8125rem; white-space: nowrap;">
-                                    <i class="fas fa-eye"></i> View
+                                    <i class="fas fa-eye"></i> 詳細
                                 </a>
                                 <button onclick="confirmDelete('{{ company.pk }}', '{{ company.company_name|escapejs }}', '{{ company.corporate_number }}')" class="btn btn-danger" style="padding: 0.25rem 0.625rem; font-size: 0.8125rem; white-space: nowrap;">
-                                    <i class="fas fa-trash"></i> Delete
+                                    <i class="fas fa-trash"></i> 削除
                                 </button>
                             </div>
                         </td>
@@ -67,7 +67,7 @@
                     <tr>
                         <td colspan="7" style="text-align: center; padding: 2rem; color: #9ca3af;">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-inbox"></i></div>
-                            <div>No companies found. Try adjusting your search criteria.</div>
+                            <div>企業が見つかりません。検索条件を調整してください。</div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -78,15 +78,15 @@
         {% if companies.has_other_pages %}
         <div class="pagination">
             {% if companies.has_previous %}
-                <a href="?page=1{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>&laquo; First</a>
-                <a href="?page={{ companies.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>&lsaquo; Prev</a>
+                <a href="?page=1{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>&laquo; 最初</a>
+                <a href="?page={{ companies.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>&lsaquo; 前へ</a>
             {% endif %}
             
             <span class="current">{{ companies.number }} / {{ companies.paginator.num_pages }}</span>
             
             {% if companies.has_next %}
-                <a href="?page={{ companies.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>Next &rsaquo;</a>
-                <a href="?page={{ companies.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>Last &raquo;</a>
+                <a href="?page={{ companies.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>次へ &rsaquo;</a>
+                <a href="?page={{ companies.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if industry %}&industry={{ industry }}{% endif %}" data-no-loading>最後 &raquo;</a>
             {% endif %}
         </div>
         {% endif %}
@@ -113,7 +113,7 @@ function handleExportClick(event, btnId, iconId, textId) {
     const originalIcon = icon.className;
     icon.className = 'fas fa-spinner fa-spin';
     const originalText = text.textContent;
-    text.textContent = 'Downloading...';
+    text.textContent = 'ダウンロード中...';
     
     // Create a temporary link to trigger download
     const link = document.createElement('a');
@@ -129,7 +129,7 @@ function handleExportClick(event, btnId, iconId, textId) {
         btn.style.opacity = '1';
         btn.style.cursor = 'pointer';
         icon.className = 'fas fa-check';
-        text.textContent = 'Downloaded!';
+        text.textContent = 'ダウンロード完了！';
         
         setTimeout(() => {
             icon.className = originalIcon;
@@ -146,25 +146,25 @@ function confirmDelete(companyId, companyName, corporateNumber) {
                 <div class="modal-header">
                     <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
-                        Confirm Deletion
+                        削除の確認
                     </h3>
                 </div>
                 <div class="modal-body">
-                    <p style="margin-bottom: 1rem; font-size: 0.9375rem;">Are you sure you want to delete:</p>
+                    <p style="margin-bottom: 1rem; font-size: 0.9375rem;">以下の企業を削除してもよろしいですか？</p>
                     <div style="background: #f9fafb; padding: 1rem; border-radius: 8px; border-left: 4px solid #ef4444; margin-bottom: 1rem;">
                         <div style="font-weight: 600; font-size: 1rem; color: #1c1e21; margin-bottom: 0.5rem;">${companyName}</div>
-                        <div style="font-size: 0.875rem; color: #6b7280;">Corporate Number: <code style="background: #e5e7eb; padding: 0.125rem 0.375rem; border-radius: 4px;">${corporateNumber}</code></div>
+                        <div style="font-size: 0.875rem; color: #6b7280;">法人番号: <code style="background: #e5e7eb; padding: 0.125rem 0.375rem; border-radius: 4px;">${corporateNumber}</code></div>
                     </div>
                     <p style="color: #dc2626; font-size: 0.875rem; margin: 0;">
-                        <i class="fas fa-info-circle"></i> This will permanently delete the company from both the database and Google Sheets.
+                        <i class="fas fa-info-circle"></i> データベースとGoogleスプレッドシートから完全に削除されます。
                     </p>
                 </div>
                 <div class="modal-footer">
                     <button onclick="closeDeleteModal()" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancel
+                        <i class="fas fa-times"></i> キャンセル
                     </button>
                     <button onclick="proceedDelete(${companyId})" class="btn btn-danger">
-                        <i class="fas fa-trash"></i> Delete
+                        <i class="fas fa-trash"></i> 削除
                     </button>
                 </div>
             </div>
@@ -230,13 +230,9 @@ function deleteCompany(companyId) {
             hideLoading();
         }
         if (typeof showAlert === 'function') {
-            showAlert('Error deleting company: ' + error.message, 'error');
+            showAlert('削除エラー: ' + error.message, 'error');
         }
     });
 }
 </script>
 {% endblock %}
-    {% comment %} }, 1000);
-}
-</script>
-{% endblock %} {% endcomment %}

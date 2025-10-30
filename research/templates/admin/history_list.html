@@ -3,22 +3,22 @@
 {% block content %}
 <div class="card">
     <div class="card-header">
-        <h2><i class="fas fa-history"></i> Change History ({{ history.paginator.count }})</h2>
+        <h2><i class="fas fa-history"></i> 変更履歴 ({{ history.paginator.count }})</h2>
     </div>
     <div class="card-body">
         <form method="get" class="search-bar" data-no-loading>
-            <input type="text" name="search" placeholder="Search history..." value="{{ search }}">
-            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+            <input type="text" name="search" placeholder="履歴を検索..." value="{{ search }}">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> 検索</button>
         </form>
         
         <div class="table-wrapper">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Timestamp</th>
-                        <th>Corporate Number</th>
-                        <th>Field Changed</th>
-                        <th>Change</th>
+                        <th>タイムスタンプ</th>
+                        <th>法人番号</th>
+                        <th>変更フィールド</th>
+                        <th>変更内容</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -61,7 +61,7 @@
                     <tr>
                         <td colspan="4" style="text-align: center; padding: 2rem; color: #9ca3af;">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-clipboard"></i></div>
-                            <div>No history records found.</div>
+                            <div>履歴レコードが見つかりません。</div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -72,15 +72,15 @@
         {% if history.has_other_pages %}
         <div class="pagination">
             {% if history.has_previous %}
-                <a href="?page=1{% if search %}&search={{ search }}{% endif %}" data-no-loading>&laquo; First</a>
-                <a href="?page={{ history.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" data-no-loading>&lsaquo; Prev</a>
+                <a href="?page=1{% if search %}&search={{ search }}{% endif %}" data-no-loading>&laquo; 最初</a>
+                <a href="?page={{ history.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" data-no-loading>&lsaquo; 前へ</a>
             {% endif %}
             
             <span class="current">{{ history.number }} / {{ history.paginator.num_pages }}</span>
             
             {% if history.has_next %}
-                <a href="?page={{ history.next_page_number }}{% if search %}&search={{ search }}{% endif %}" data-no-loading>Next &rsaquo;</a>
-                <a href="?page={{ history.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}" data-no-loading>Last &raquo;</a>
+                <a href="?page={{ history.next_page_number }}{% if search %}&search={{ search }}{% endif %}" data-no-loading>次へ &rsaquo;</a>
+                <a href="?page={{ history.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}" data-no-loading>最後 &raquo;</a>
             {% endif %}
         </div>
         {% endif %}

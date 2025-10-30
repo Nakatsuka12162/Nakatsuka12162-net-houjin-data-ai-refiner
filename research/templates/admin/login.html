@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Company Research System</title>
+    <title>ログイン - 企業調査システム</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -188,8 +188,8 @@
     <div class="login-card">
         <div class="logo">
             <div class="logo-icon"><i class="fas fa-building"></i></div>
-            <h1>Company Research</h1>
-            <p>Admin System Login</p>
+            <h1>企業調査</h1>
+            <p>管理システムログイン</p>
         </div>
         
         {% if messages %}
@@ -204,7 +204,7 @@
         <form method="post" id="loginForm">
             {% csrf_token %}
             <div class="form-group">
-                <label for="username"><i class="fas fa-user"></i> Username</label>
+                <label for="username"><i class="fas fa-user"></i> ユーザー名</label>
                 <div class="input-wrapper">
                     <i class="fas fa-user input-icon"></i>
                     <input type="text" id="username" name="username" required autofocus>
@@ -212,7 +212,7 @@
             </div>
             
             <div class="form-group">
-                <label for="password"><i class="fas fa-lock"></i> Password</label>
+                <label for="password"><i class="fas fa-lock"></i> パスワード</label>
                 <div class="input-wrapper">
                     <i class="fas fa-lock input-icon"></i>
                     <input type="password" id="password" name="password" required>
@@ -221,7 +221,7 @@
             
             <button type="submit" class="btn-login" id="loginBtn">
                 <i class="fas fa-sign-in-alt" id="loginIcon"></i>
-                <span id="loginBtnText">Login</span>
+                <span id="loginBtnText">ログイン</span>
             </button>
         </form>
     </div>
@@ -235,7 +235,7 @@
         
         form.addEventListener('submit', function(e) {
             btn.disabled = true;
-            btnText.textContent = 'Logging in...';
+            btnText.textContent = 'ログイン中...';
             icon.className = 'fas fa-spinner fa-spin';
             overlay.classList.add('active');
         });
