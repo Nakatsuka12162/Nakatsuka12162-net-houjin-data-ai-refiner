@@ -953,9 +953,12 @@ def trigger_scraping(request):
             if request.content_type == 'application/json' and request.body:
                 config = json.loads(request.body)
             
+            # Determine data source
+            data_source = config.get('data_source', 'sheets')
+            
             # Create execution record with user configuration
             execution = ExecutionHistory.objects.create(
-                spreadsheet_range=config.get('spreadsheet_range', '会社リスト!A3:D'),
+                spreadsheet_range=config.get('spreadsheet_range', '会社リスト!A3:D') if data_source == 'sheets' else '手動入力',
                 update_google_sheets=config.get('update_google_sheets', True),
                 description=config.get('description', ''),
                 max_companies=config.get('max_companies', None)
@@ -967,19 +970,19 @@ def trigger_scraping(request):
                     from .scraper import CompanyScraper
                     scraper = CompanyScraper()
                     
-                    # Check if user provided custom configuration
-                    if (execution.spreadsheet_range != '会社リスト!A3:D' or 
-                        not execution.update_google_sheets or 
-                        execution.max_companies or 
-                        execution.description):
-                        # Use configured scraping
-                        scraper.user_range = execution.spreadsheet_range
-                        scraper.user_update_sheets = execution.update_google_sheets
-                        scraper.user_max_companies = execution.max_companies
-                        result = scraper.scrape_companies_with_config()
+                    # Configure scraper based on data source
+                    if data_source == 'manual':
+                        # Manual input from WebUI
+                        scraper.user_manual_data = config.get('company_data', '')
+                        scraper.user_update_sheets = config.get('update_google_sheets', True)
+                        scraper.user_max_companies = config.get('max_companies', None)
                     else:
-                        # Use default scraping
-                        result = scraper.scrape_companies()
+                        # Google Sheets input
+                        scraper.user_range = config.get('spreadsheet_range', '会社リスト!A3:D')
+                        scraper.user_update_sheets = config.get('update_google_sheets', True)
+                        scraper.user_max_companies = config.get('max_companies', None)
+                    
+                    result = scraper.scrape_companies()
                     
                     execution.status = 'completed'
                     execution.processed_companies = result.get('processed', 0)
@@ -1010,6 +1013,7 @@ def trigger_scraping(request):
                 'execution_id': execution.id,
                 'message': 'Scraping started with user configuration',
                 'config': {
+                    'data_source': data_source,
                     'range': execution.spreadsheet_range,
                     'update_sheets': execution.update_google_sheets,
                     'description': execution.description,

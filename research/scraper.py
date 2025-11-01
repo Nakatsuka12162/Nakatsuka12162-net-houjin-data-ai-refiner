@@ -39,6 +39,7 @@ class CompanyScraper:
         self.user_range = "会社リスト!A3:D"
         self.user_update_sheets = True
         self.user_max_companies = None
+        self.user_manual_data = None  # For manual input from WebUI
         
         # Log collection
         self.logs = []
@@ -241,6 +242,45 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
         except Exception as e:
             self.log(f"Failed to fetch Google Sheets data: {e}", 'ERROR')
             return {}
+    
+    def parse_manual_data(self, csv_text):
+        """Parse manual CSV input from WebUI
+        
+        Expected format:
+        法人番号,企業名,住所,備考
+        1234567890123,株式会社サンプル,東京都渋谷区,
+        9876543210987,サンプル商事株式会社,大阪府大阪市,
+        
+        Returns: dict with 'values' key containing list of rows (compatible with Google Sheets API format)
+        """
+        import csv
+        from io import StringIO
+        
+        try:
+            self.log("Parsing manual company data from WebUI")
+            reader = csv.reader(StringIO(csv_text.strip()))
+            rows = list(reader)
+            
+            # Filter out empty rows
+            values = []
+            for row in rows:
+                # Skip header row if it looks like a header
+                if row and row[0].lower() in ['法人番号', 'corporate_number', '企業法人番号']:
+                    continue
+                # Skip empty rows
+                if not any(cell.strip() for cell in row):
+                    continue
+                # Ensure row has 4 columns
+                while len(row) < 4:
+                    row.append("")
+                values.append(row[:4])  # Take first 4 columns
+            
+            self.log(f"Parsed {len(values)} companies from manual input")
+            return {"values": values}
+            
+        except Exception as e:
+            self.log(f"Failed to parse manual data: {e}", 'ERROR')
+            return {"values": []}
 
     def to_zenkaku(self, num: int) -> str:
         s = str(num)
@@ -460,9 +500,15 @@ https://info.gbiz.go.jp/hojin/ichiran?hojinBango=
         try:
             self.log("Starting scraping process")
             
-            # Get data from Google Sheets
-            data = self.upload_prompt()
-            self.log(f"Google Sheets API response keys: {list(data.keys())}")
+            # Get data from manual input OR Google Sheets
+            if self.user_manual_data:
+                self.log("Using manual input data from WebUI")
+                data = self.parse_manual_data(self.user_manual_data)
+            else:
+                self.log("Fetching data from Google Sheets")
+                data = self.upload_prompt()
+            
+            self.log(f"Data source response keys: {list(data.keys())}")
             
             if "values" not in data:
                 error_msg = f"No 'values' key in response: {data}"
